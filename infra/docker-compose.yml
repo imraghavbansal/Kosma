@@ -1,0 +1,28 @@
+# Optional containerized path. The primary local-dev flow (see README.md) runs the
+# API and web app as plain native processes against a hosted Supabase Postgres, with
+# no Docker dependency at all - this file is here only for anyone who'd rather
+# containerize the two app processes. It does not run Postgres or Redis locally;
+# DATABASE_URL in ../.env must point at your Supabase project either way.
+name: traceos
+
+services:
+  api:
+    build:
+      context: ../apps/api
+    env_file:
+      - ../.env
+    ports:
+      - "8000:8000"
+    command: sh -c "alembic upgrade head && uvicorn traceos_api.main:app --host 0.0.0.0 --port 8000"
+
+  web:
+    build:
+      context: ../apps/web
+    env_file:
+      - ../.env
+    environment:
+      API_INTERNAL_URL: http://api:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
