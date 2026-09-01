@@ -34,6 +34,11 @@ def run_migrations_online() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        # see kosma_api/db/session.py's comment - needed when DATABASE_URL
+        # points at Supabase's transaction-mode pooler, as it does in
+        # deployed environments (e.g. Railway) where the direct connection's
+        # IPv6-only address isn't reachable.
+        connect_args={"prepare_threshold": None},
     )
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
