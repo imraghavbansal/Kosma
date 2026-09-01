@@ -52,3 +52,35 @@ class ImpactReportOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class RegressionTestOut(BaseModel):
+    id: uuid.UUID
+    project_id: uuid.UUID
+    impact_report_id: uuid.UUID | None
+    source_trace_id: uuid.UUID
+    input_text: str
+    context_snapshot: dict
+    expected_condition: str
+    baseline_output: str | None
+    status: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class RegressionTestListOut(BaseModel):
+    items: list[RegressionTestOut]
+    total: int
+
+
+class PredictionOutcomeOut(BaseModel):
+    id: uuid.UUID
+    change_proposal_id: uuid.UUID
+    predicted_metrics: dict
+    actual_metrics: dict
+    prediction_error: dict
+    evaluated_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

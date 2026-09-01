@@ -159,3 +159,34 @@ export interface ImpactReport {
   evidence: ImpactEvidence[];
   created_at: string;
 }
+
+export type RegressionTestStatus = "pending" | "passed" | "failed";
+
+export interface RegressionTest {
+  id: string;
+  project_id: string;
+  impact_report_id: string | null;
+  source_trace_id: string;
+  input_text: string;
+  context_snapshot: Record<string, unknown>;
+  expected_condition: string;
+  baseline_output: string | null;
+  status: RegressionTestStatus;
+  created_at: string;
+}
+
+export interface ActualSegmentResult {
+  status?: "insufficient_data";
+  sample_size: number;
+  actual_success_rate?: number;
+}
+
+export interface PredictionOutcome {
+  id: string;
+  change_proposal_id: string;
+  predicted_metrics: Record<string, SegmentMetrics>;
+  actual_metrics: Record<string, ActualSegmentResult>;
+  prediction_error: Record<string, number>;
+  evaluated_at: string | null;
+  created_at: string;
+}

@@ -4,17 +4,22 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
+from datetime import datetime, timezone
+
 from kosma_api.auth import require_dashboard_session
 from kosma_api.change_engine.analysis import run_analysis
+from kosma_api.change_engine.scorecard import compute_prediction_outcome
 from kosma_api.db.session import get_db
 from kosma_api.models.agent_config import AgentConfig
 from kosma_api.models.change_proposal import ChangeProposal, ChangeProposalStatus
 from kosma_api.models.impact_report import ImpactReport
+from kosma_api.models.prediction_outcome import PredictionOutcome
 from kosma_api.schemas.change_engine import (
     ChangeProposalIn,
     ChangeProposalListOut,
     ChangeProposalOut,
     ImpactReportOut,
+    PredictionOutcomeOut,
 )
 
 router = APIRouter(
@@ -89,6 +94,37 @@ def get_impact_report(proposal_id: uuid.UUID, db: Session = Depends(get_db)) -> 
     if report is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not analyzed yet")
     return _load_with_evidence(db, report.id)
+
+
+@router.post("/{proposal_id}/ship", response_model=ChangeProposalOut)
+def ship_change_proposal(proposal_id: uuid.UUID, db: Session = Depends(get_db)) -> ChangeProposal:
+    proposal = db.get(ChangeProposal, proposal_id)
+    if proposal is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Change proposal not found")
+    if proposal.status != ChangeProposalStatus.analyzed:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Can only ship a proposal that has been analyzed",
+        )
+    proposal.status = ChangeProposalStatus.shipped
+    proposal.shipped_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(proposal)
+    return proposal
+
+
+@router.get("/{proposal_id}/prediction-outcome", response_model=PredictionOutcomeOut)
+def get_prediction_outcome(proposal_id: uuid.UUID, db: Session = Depends(get_db)) -> PredictionOutcome:
+    proposal = db.get(ChangeProposal, proposal_id)
+    if proposal is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Change proposal not found")
+    if proposal.status != ChangeProposalStatus.shipped:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not shipped yet")
+
+    outcome = compute_prediction_outcome(db, proposal)
+    if outcome is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No impact report to compare against")
+    return outcome
 
 
 def _load_with_evidence(db: Session, report_id: uuid.UUID) -> ImpactReport:
