@@ -11,4 +11,7 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "kosma_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# $PORT is set by the host (e.g. Railway assigns it dynamically); 8000 is the
+# local/default fallback. Migrations run on every boot - safe because Alembic
+# tracks the applied revision and no-ops if there's nothing new to apply.
+CMD ["sh", "-c", "alembic upgrade head && uvicorn kosma_api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
