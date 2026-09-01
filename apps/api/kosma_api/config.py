@@ -1,11 +1,17 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# .env lives at the repo root (apps/api/kosma_api/config.py -> up 3 levels), not in
+# apps/api/ - resolved absolutely so it's found regardless of the process's cwd
+# (matters because uvicorn/pytest/alembic are documented to run from apps/api).
+_REPO_ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_REPO_ROOT_ENV_FILE, extra="ignore")
 
     environment: str = "local"
     # Supabase Postgres connection string (Project Settings -> Database -> Connection

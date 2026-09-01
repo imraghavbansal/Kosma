@@ -1,6 +1,8 @@
 import os
 
-os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://kosma:kosma@localhost:5434/kosma")
+# DATABASE_URL intentionally not defaulted here - it comes from .env (Supabase
+# connection string), same as the running app. Set it explicitly if running tests
+# without a .env file present.
 os.environ.setdefault("KOSMA_DASHBOARD_SECRET", "test-secret-123")
 os.environ.setdefault("KOSMA_SESSION_SECRET_KEY", "test-session-signing-key")
 
