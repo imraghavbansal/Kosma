@@ -24,7 +24,7 @@ POST /v1/traces
   -> 202 { trace_id, status: "queued" }
 ```
 The SDK submits one complete trace payload on completion (no partial/streaming ingestion
-in V1 — keeps ingestion simple and fast).
+in V1 - keeps ingestion simple and fast).
 
 ## Agents & configs
 

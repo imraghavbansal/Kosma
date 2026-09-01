@@ -2,12 +2,107 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-background: #fafafa;
+  --color-surface: #ffffff;
+  --color-surface-2: #f2f2f4;
+  --color-border: #e4e4e7;
+  --color-border-strong: #d4d4d8;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-accent: #3b6fe0;
+  --color-accent-foreground: #ffffff;
+  --color-danger: #dc2626;
+  --color-warning: #b45309;
+  --color-success: #15803d;
+}
+
+.dark {
+  --color-background: #09090b;
+  --color-surface: #111114;
+  --color-surface-2: #18181c;
+  --color-border: #232328;
+  --color-border-strong: #303038;
+  --color-foreground: #e8e8ea;
+  --color-muted: #8b8b93;
+  --color-accent: #5b8def;
+  --color-accent-foreground: #0a0a0c;
+  --color-danger: #f0625f;
+  --color-warning: #e5a63d;
+  --color-success: #3dd68c;
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
 html,
 body {
-  background-color: #0a0a0c;
-  color: #e6e6e9;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
 }
 
 * {
-  border-color: #232328;
+  border-color: var(--color-border);
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  transition:
+    background-color 0.2s var(--tw-ease, cubic-bezier(0.16, 1, 0.3, 1)),
+    border-color 0.2s var(--tw-ease, cubic-bezier(0.16, 1, 0.3, 1)),
+    color 0.2s var(--tw-ease, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-accent-foreground);
+}
+
+/* Thin, unobtrusive scrollbars matching the theme instead of the OS default */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-strong);
+  border-radius: 999px;
+  border: 2px solid var(--color-background);
+}
+
+@keyframes shimmer-bg {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-2) 25%,
+    var(--color-border) 50%,
+    var(--color-surface-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-bg 1.8s ease-in-out infinite;
 }

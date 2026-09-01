@@ -9,7 +9,7 @@ export default function DashboardHome() {
       </p>
       <div className="mt-8 rounded-lg border border-dashed border-border p-6">
         <p className="text-sm text-muted">
-          Foundation phase only — the change engine (Phases 5-7) isn&apos;t wired up yet.
+          Foundation phase only. The change engine (Phases 5-7) isn&apos;t wired up yet.
           Once it is, this screen becomes the propose-change flow described in{" "}
           <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">
             PRODUCT-SPEC.md

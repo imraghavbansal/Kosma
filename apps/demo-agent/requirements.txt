@@ -1,0 +1,3 @@
+# kosma is not published to PyPI - install it from the local package:
+#   pip install -e ../../packages/sdk
+pytest==8.3.4

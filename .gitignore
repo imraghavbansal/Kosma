@@ -1,5 +1,6 @@
 .env
 .env.local
+.demo_credentials.json
 
 # Python
 __pycache__/
