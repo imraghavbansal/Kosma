@@ -19,7 +19,7 @@ import json
 import random
 import sys
 import time
-from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -56,6 +56,44 @@ def _weighted_choice(rng: random.Random, weights: dict) -> str:
     return rng.choices(list(weights.keys()), weights=list(weights.values()), k=1)[0]
 
 
+MAX_WORKERS = 8
+
+
+def _run_one(
+    *,
+    sub_seed: int,
+    day_range: tuple[int, int],
+    is_candidate: bool,
+    agent_id: str,
+    config_id: str,
+    client: "KosmaClient",
+) -> tuple[str, datetime]:
+    """Everything for one trace derives from its own Random(sub_seed) - workflow,
+    region, order_id, tool outcomes, mock-provider success roll, all of it. That's
+    what makes this safe to run concurrently and still fully reproducible: the
+    *sequence* of sub_seeds is generated single-threaded from one master seed (see
+    _generate_batch), so which trace gets which sub_seed never changes between
+    runs, even though the order they finish in (and get inserted in) does."""
+    rng = random.Random(sub_seed)
+    workflow = _weighted_choice(rng, WORKFLOW_WEIGHTS)
+    region = _weighted_choice(rng, REGION_WEIGHTS)
+
+    trace_ref = agent.run_once(
+        workflow=workflow,
+        region=region,
+        agent_id=agent_id,
+        agent_config_id=config_id,
+        is_candidate=is_candidate,
+        client=client,
+        rng=rng,
+    )
+
+    days_ago = rng.uniform(*day_range)
+    jitter = timedelta(hours=rng.uniform(0, 23), minutes=rng.uniform(0, 59))
+    timestamp = datetime.now(timezone.utc) - timedelta(days=days_ago) - jitter
+    return trace_ref, timestamp
+
+
 def _generate_batch(
     *,
     count: int,
@@ -65,30 +103,40 @@ def _generate_batch(
     client: "KosmaClient",
     rng: random.Random,
 ) -> list[tuple[str, datetime]]:
-    """Runs `count` agent executions, returns [(trace_ref, backdated_timestamp)]."""
+    """Runs `count` agent executions concurrently (network-bound HTTP calls to a
+    hosted API, not CPU-bound work), returns [(trace_ref, backdated_timestamp)]."""
     config_id = credentials["candidate_config_id"] if is_candidate else credentials["baseline_config_id"]
-    results = []
-    for i in range(count):
-        workflow = _weighted_choice(rng, WORKFLOW_WEIGHTS)
-        region = _weighted_choice(rng, REGION_WEIGHTS)
+    sub_seeds = [rng.randrange(2**32) for _ in range(count)]
 
-        trace_ref = agent.run_once(
-            workflow=workflow,
-            region=region,
-            agent_id=credentials["agent_id"],
-            agent_config_id=config_id,
-            is_candidate=is_candidate,
-            client=client,
-            rng=rng,
-        )
+    results: list[tuple[str, datetime]] = []
+    errors: list[BaseException] = []
+    label = "candidate" if is_candidate else "baseline"
+    done = 0
 
-        days_ago = rng.uniform(*day_range)
-        jitter = timedelta(hours=rng.uniform(0, 23), minutes=rng.uniform(0, 59))
-        timestamp = datetime.now(timezone.utc) - timedelta(days=days_ago) - jitter
-        results.append((trace_ref, timestamp))
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+        futures = {
+            pool.submit(
+                _run_one,
+                sub_seed=s,
+                day_range=day_range,
+                is_candidate=is_candidate,
+                agent_id=credentials["agent_id"],
+                config_id=config_id,
+                client=client,
+            ): s
+            for s in sub_seeds
+        }
+        for future in as_completed(futures):
+            done += 1
+            try:
+                results.append(future.result())
+            except Exception as exc:  # noqa: BLE001 - collected and reported, not swallowed
+                errors.append(exc)
+            if done % 100 == 0 or done == count:
+                print(f"  {label}: {done}/{count} ({len(errors)} errors so far)")
 
-        if (i + 1) % 100 == 0:
-            print(f"  {'candidate' if is_candidate else 'baseline'}: {i + 1}/{count}")
+    if errors:
+        print(f"  {label}: {len(errors)} traces failed after retries, e.g.: {errors[0]}")
 
     return results
 

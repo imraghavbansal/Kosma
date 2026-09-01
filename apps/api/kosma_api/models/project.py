@@ -18,4 +18,6 @@ class Project(IDMixin, TimestampMixin, Base):
     api_key_hash: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
     organization: Mapped["Organization"] = relationship(back_populates="projects")
-    agents: Mapped[list["Agent"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    agents: Mapped[list["Agent"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan", passive_deletes=True
+    )

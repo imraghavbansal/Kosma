@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from kosma_api.db.base import Base
 from kosma_api.models.mixins import IDMixin, TimestampMixin
@@ -22,3 +22,5 @@ class ImpactEvidence(IDMixin, TimestampMixin, Base):
         UUID(as_uuid=True), ForeignKey("traces.id", ondelete="CASCADE"), nullable=False
     )
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    impact_report: Mapped["ImpactReport"] = relationship(back_populates="evidence")

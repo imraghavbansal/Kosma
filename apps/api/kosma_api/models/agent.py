@@ -18,4 +18,6 @@ class Agent(IDMixin, TimestampMixin, Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     project: Mapped["Project"] = relationship(back_populates="agents")
-    configs: Mapped[list["AgentConfig"]] = relationship(back_populates="agent", cascade="all, delete-orphan")
+    configs: Mapped[list["AgentConfig"]] = relationship(
+        back_populates="agent", cascade="all, delete-orphan", passive_deletes=True
+    )

@@ -3,7 +3,7 @@ import uuid
 
 from sqlalchemy import Enum, Float, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from kosma_api.db.base import Base
 from kosma_api.models.mixins import IDMixin, TimestampMixin
@@ -32,3 +32,7 @@ class ImpactReport(IDMixin, TimestampMixin, Base):
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
     overall_metrics: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     segment_metrics: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+
+    evidence: Mapped[list["ImpactEvidence"]] = relationship(
+        back_populates="impact_report", cascade="all, delete-orphan"
+    )

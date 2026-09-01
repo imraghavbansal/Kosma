@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from kosma_api.config import get_settings
-from kosma_api.routers import auth, health, ingestion, traces
+from kosma_api.routers import agents, auth, change_engine, health, ingestion, traces
 
 logger = logging.getLogger("kosma_api")
 settings = get_settings()
@@ -68,3 +68,5 @@ app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(ingestion.router)
 app.include_router(traces.router)
+app.include_router(agents.router)
+app.include_router(change_engine.router)

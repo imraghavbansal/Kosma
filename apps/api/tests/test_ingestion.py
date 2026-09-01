@@ -132,3 +132,28 @@ def test_get_trace_404_for_unknown_id(client):
     client.post("/v1/auth/login", json={"secret": "test-secret-123"})
     response = client.get("/v1/traces/00000000-0000-0000-0000-000000000000")
     assert response.status_code == 404
+
+
+def test_ingest_is_idempotent_on_trace_ref(client, seeded_project):
+    """A retried submission (same trace_ref, e.g. after a client-side timeout on a
+    request that actually succeeded server-side) must not fail or create a second
+    row - this is a real failure mode hit while seeding the demo corpus at volume,
+    not a hypothetical."""
+    payload = {
+        "trace_ref": _unique_ref("idempotent"),
+        "agent_id": str(seeded_project["agent_id"]),
+        "agent_config_id": str(seeded_project["agent_config_id"]),
+        "input_text": "retried submission",
+        "spans": [],
+    }
+    first = client.post("/v1/traces", json=payload, headers=_auth_headers(seeded_project["api_key"]))
+    second = client.post("/v1/traces", json=payload, headers=_auth_headers(seeded_project["api_key"]))
+
+    assert first.status_code == 202
+    assert second.status_code == 202
+    assert first.json()["trace_id"] == second.json()["trace_id"]
+
+    client.post("/v1/auth/login", json={"secret": "test-secret-123"})
+    detail = client.get(f"/v1/traces/{first.json()['trace_id']}")
+    assert detail.status_code == 200
+    assert detail.json()["trace_ref"] == payload["trace_ref"]

@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from kosma_api.auth import require_project_api_key
 from kosma_api.db.session import get_db
+from kosma_api.embeddings import mock_embed
 from kosma_api.models.project import Project
 from kosma_api.models.retrieval_event import RetrievalEvent
 from kosma_api.models.span import Span
@@ -20,6 +23,17 @@ def ingest_trace(
     project: Project = Depends(require_project_api_key),
     db: Session = Depends(get_db),
 ) -> TraceAcceptedOut:
+    # trace_ref doubles as an idempotency key: the SDK generates it once per trace
+    # and reuses it across retries (see kosma.client.KosmaClient). A client-side
+    # timeout doesn't mean the original request failed server-side - the insert may
+    # have already committed and only the response was lost - so a retry with a
+    # trace_ref that already exists is treated as "already done", not an error.
+    # This was found for real: concurrent seeding hit exactly this race and turned
+    # a successful write into a 500 on the retry, before this check existed.
+    existing = db.scalar(select(Trace).where(Trace.trace_ref == body.trace_ref))
+    if existing is not None:
+        return TraceAcceptedOut(trace_id=existing.id, status="queued")
+
     refs = [span.ref for span in body.spans]
     if len(refs) != len(set(refs)):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Duplicate span refs")
@@ -42,6 +56,7 @@ def ingest_trace(
         workflow_tag=body.workflow_tag,
         segment_tags=body.segment_tags,
         input_text=body.input_text,
+        input_embedding=mock_embed(body.input_text),
         status=body.status,
         success=body.success,
         latency_ms=body.latency_ms,
@@ -109,7 +124,18 @@ def ingest_trace(
             )
         remaining = still_remaining
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Narrow race: two requests with the same trace_ref both passed the
+        # existence check above before either committed. The check above handles
+        # the actual failure mode we saw in practice (sequential client retries);
+        # this is defense in depth for genuinely concurrent duplicates.
+        db.rollback()
+        existing = db.scalar(select(Trace).where(Trace.trace_ref == body.trace_ref))
+        if existing is not None:
+            return TraceAcceptedOut(trace_id=existing.id, status="queued")
+        raise
 
     # Embedding + workflow/segment tagging (Phase 5) is not implemented yet - "queued"
     # accurately reflects that this trace is written but not yet enriched.

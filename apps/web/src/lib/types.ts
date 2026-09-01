@@ -89,3 +89,73 @@ export interface TraceDetail {
   created_at: string;
   spans: Span[];
 }
+
+export interface AgentConfig {
+  id: string;
+  agent_id: string;
+  kind: "prompt" | "model";
+  version_label: string;
+  prompt_text: string | null;
+  model_provider: string | null;
+  model_name: string | null;
+  is_baseline: boolean;
+  created_at: string;
+}
+
+export interface Agent {
+  id: string;
+  project_id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  configs: AgentConfig[];
+}
+
+export type ChangeProposalStatus = "draft" | "analyzing" | "analyzed" | "shipped";
+
+export interface ChangeProposal {
+  id: string;
+  agent_id: string;
+  baseline_config_id: string;
+  candidate_config_id: string;
+  description: string | null;
+  status: ChangeProposalStatus;
+  shipped_at: string | null;
+  created_at: string;
+}
+
+export type Recommendation = "SHIP" | "MODIFY" | "BLOCK";
+
+export interface SegmentMetrics {
+  segment: string;
+  workflow: string;
+  region: string;
+  sample_size: number;
+  baseline_success_rate: number;
+  candidate_success_rate: number;
+  success_delta: number;
+  baseline_avg_output_tokens: number;
+  candidate_avg_output_tokens: number;
+  token_delta_pct: number;
+}
+
+export interface ImpactEvidence {
+  id: string;
+  segment: string | null;
+  baseline_trace_id: string;
+  replay_trace_id: string;
+  note: string | null;
+}
+
+export interface ImpactReport {
+  id: string;
+  change_proposal_id: string;
+  cohort_size: number;
+  sample_size: number;
+  recommendation: Recommendation;
+  confidence: number;
+  overall_metrics: SegmentMetrics;
+  segment_metrics: SegmentMetrics[];
+  evidence: ImpactEvidence[];
+  created_at: string;
+}
