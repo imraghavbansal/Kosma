@@ -10,4 +10,6 @@ class Organization(IDMixin, TimestampMixin, Base):
 
     name: Mapped[str] = mapped_column(String, nullable=False)
 
-    projects: Mapped[list["Project"]] = relationship(back_populates="organization")
+    projects: Mapped[list["Project"]] = relationship(
+        back_populates="organization", cascade="all, delete-orphan"
+    )

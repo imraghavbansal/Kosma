@@ -97,21 +97,32 @@ accepted, is in [PRODUCT-SPEC.md](PRODUCT-SPEC.md) and
 
 ## Status
 
-**Phase 1 (Foundation) is done and verified.** Monorepo scaffold, the full V1
-database schema (17 tables) applied via Alembic against a real Postgres
-instance, shared-secret dashboard auth with login/logout and a signed session
-cookie, a health check endpoint, structured error responses with request IDs,
-and a Next.js dashboard shell (dark theme, sidebar nav, login flow). Six
-backend tests passing.
+**Phase 2 (SDK + Ingestion) is done and verified**, on top of Phase 1
+(Foundation). The database is hosted on Supabase now (see
+[docs/architecture.md](docs/architecture.md) for why Docker got dropped).
+Verified end to end with a real request: the Python SDK's `tracer.start_trace`
++ nested `span()` calls, through `POST /v1/traces` (hashed per-project API
+key auth), into Postgres, back out through `GET /v1/traces/{id}` - span
+parent/child links, a tool call, and a retrieval event all round-tripped
+correctly. 21 tests passing (13 backend + 8 SDK), all against the real
+database, no mocks standing in for it.
 
-Next up is Phase 2, SDK and ingestion. Full phase breakdown and definition of
-done for each phase is in [docs/development-plan.md](docs/development-plan.md).
+Two real bugs were caught and fixed along the way, not just features added:
+`Settings`'s `.env` lookup only worked if the process happened to be launched
+from the repo root; and the dashboard's auth middleware was gating `/api/*`
+too, which blocked the login route with the very check login is supposed to
+satisfy. Both are described in the commit history and architecture doc rather
+than swept under a passing test.
+
+Next up is Phase 3, the seeded demo agent and its historical corpus. Full
+phase breakdown and definition of done for each phase is in
+[docs/development-plan.md](docs/development-plan.md).
 
 | Phase | What | Status |
 |---|---|---|
 | 0 | Planning: spec, architecture, schema, API design, roadmap | Done |
 | 1 | Foundation: monorepo, DB, auth, dashboard shell | Done |
-| 2 | SDK + Ingestion | Not started |
+| 2 | SDK + Ingestion | Done |
 | 3 | Demo Agent + Seed Corpus | Not started |
 | 4 | Trace Explorer & Evidence UI | Not started |
 | 5 | Embeddings & Cohort Matching | Not started |

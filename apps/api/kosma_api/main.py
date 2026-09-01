@@ -2,12 +2,13 @@ import logging
 import uuid
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from kosma_api.config import get_settings
-from kosma_api.routers import auth, health
+from kosma_api.routers import auth, health, ingestion, traces
 
 logger = logging.getLogger("kosma_api")
 settings = get_settings()
@@ -47,5 +48,23 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
     )
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", None)
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": {
+                "code": 422,
+                "message": "Validation failed",
+                "details": exc.errors(),
+                "request_id": request_id,
+            }
+        },
+    )
+
+
 app.include_router(health.router)
 app.include_router(auth.router)
+app.include_router(ingestion.router)
+app.include_router(traces.router)
