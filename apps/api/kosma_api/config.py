@@ -40,7 +40,10 @@ class Settings(BaseSettings):
     # Comma-separated. The browser only ever talks to the frontend's own origin
     # (see lib/api.ts's same-origin proxy) so this matters mainly for direct API
     # access (e.g. the /docs Swagger UI) from a deployed frontend origin.
-    allowed_origins: str = Field(default="http://localhost:3000", validation_alias="ALLOWED_ORIGINS")
+    allowed_origins: str = Field(
+        default="http://localhost:3000,https://kosma-ai.vercel.app",
+        validation_alias="ALLOWED_ORIGINS",
+    )
 
     @property
     def allowed_origins_list(self) -> list[str]:
