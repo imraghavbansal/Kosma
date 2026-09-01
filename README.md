@@ -2,6 +2,8 @@
 
 Know what a change will break before you ship it.
 
+**Live**: https://kosma-ai.vercel.app
+
 Kosma is an AI change intelligence system. You propose a change to a prompt or a
 model, and instead of eyeballing a handful of test cases and hoping for the best,
 Kosma finds comparable historical executions of your agent, replays the candidate
@@ -97,40 +99,46 @@ accepted, is in [PRODUCT-SPEC.md](PRODUCT-SPEC.md) and
 
 ## Status
 
-**Phase 2 (SDK + Ingestion) is done and verified**, on top of Phase 1
-(Foundation). The database is hosted on Supabase now (see
-[docs/architecture.md](docs/architecture.md) for why Docker got dropped).
-Verified end to end with a real request: the Python SDK's `tracer.start_trace`
-+ nested `span()` calls, through `POST /v1/traces` (hashed per-project API
-key auth), into Postgres, back out through `GET /v1/traces/{id}` - span
-parent/child links, a tool call, and a retrieval event all round-tripped
-correctly. 21 tests passing (13 backend + 8 SDK), all against the real
-database, no mocks standing in for it.
+**Live**: https://kosma-ai.vercel.app (frontend on Vercel, API on Render, DB on
+Supabase - all free tier, no card required, no trial expiry - see
+[docs/architecture.md](docs/architecture.md) for why Docker/Railway got
+dropped along the way).
 
-Two real bugs were caught and fixed along the way, not just features added:
-`Settings`'s `.env` lookup only worked if the process happened to be launched
-from the repo root; and the dashboard's auth middleware was gating `/api/*`
-too, which blocked the login route with the very check login is supposed to
-satisfy. Both are described in the commit history and architecture doc rather
-than swept under a passing test.
+**The full core loop (Phases 0-9) is built and verified against a real
+seeded corpus**, not toy data: propose a prompt/model change, Kosma finds the
+matched historical cohort, replays the candidate config against it, produces
+a segmented Blast Radius Diff and a Ship/Modify/Block recommendation,
+generates a regression suite from the worst regressions, and - once
+shipped - grades its own prediction against real live traffic under the new
+config. Every one of those steps has been run against the actual demo corpus
+and produced a correct answer (documented below), not just passed a unit
+test in isolation.
 
-Next up is Phase 3, the seeded demo agent and its historical corpus. Full
-phase breakdown and definition of done for each phase is in
-[docs/development-plan.md](docs/development-plan.md).
+29 tests passing (25 backend + 4 SDK... see `apps/api/tests` and
+`packages/sdk/tests`), all against a real Postgres instance, no mocked DB.
+Several real bugs were found and fixed along the way rather than papered
+over - connection pool exhaustion, a cascade-delete ordering bug, request
+idempotency under retry, IPv6-only DNS on the deploy host - see the commit
+history for each, and [docs/architecture.md](docs/architecture.md)'s
+revision notes for the ones that changed a design decision.
 
 | Phase | What | Status |
 |---|---|---|
 | 0 | Planning: spec, architecture, schema, API design, roadmap | Done |
 | 1 | Foundation: monorepo, DB, auth, dashboard shell | Done |
 | 2 | SDK + Ingestion | Done |
-| 3 | Demo Agent + Seed Corpus | Not started |
-| 4 | Trace Explorer & Evidence UI | Not started |
-| 5 | Embeddings & Cohort Matching | Not started |
-| 6 | Change Engine | Not started |
-| 7 | Home Dashboard (Propose a Change) | Not started |
-| 8 | Regression Suite Generation | Not started |
-| 9 | Prediction Scorecard | Not started |
-| 10 | Polish, Tests, Docs | Not started |
+| 3 | Demo Agent + Seed Corpus | Done |
+| 4 | Trace Explorer & Evidence UI | Done |
+| 5 | Embeddings & Cohort Matching | Done |
+| 6 | Change Engine | Done |
+| 7 | Home Dashboard (Propose a Change) | Done |
+| 8 | Regression Suite Generation | Done |
+| 9 | Prediction Scorecard | Done |
+| 10 | Polish, Tests, Docs | Ongoing |
+| 11 | Deployment | Done |
+
+Full phase breakdown and definition of done for each is in
+[docs/development-plan.md](docs/development-plan.md).
 
 Working style for this project: build one phase, run it, test it, write down
 exactly what works and what doesn't, then move to the next one. No phase gets

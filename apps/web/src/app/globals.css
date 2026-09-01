@@ -106,3 +106,68 @@ textarea {
   background-size: 200% 100%;
   animation: shimmer-bg 1.8s ease-in-out infinite;
 }
+
+/* Login page: animated backdrop - a slowly drifting radial glow over a fixed
+   grid, and a gentle vertical float for decorative elements. Restrained on
+   purpose (no giant gradients, no glow spam) - see the design principle in
+   docs/architecture.md: technical/trustworthy, not a marketing template. */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-3%, 2%);
+  }
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes grow-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.bg-grid {
+  background-image:
+    linear-gradient(var(--color-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 90%);
+}
+
+.bg-glow {
+  animation: drift 18s ease-in-out infinite;
+}
+
+.float-y {
+  animation: float-y 5s ease-in-out infinite;
+}
+
+/* Entrance fade-in + a continuous gentle float, combined in one declaration -
+   two separate `animation` shorthand classes on the same element would
+   overwrite each other rather than combine. */
+.feature-item {
+  opacity: 0;
+  animation:
+    fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+    float-y 5s ease-in-out infinite;
+  animation-delay: var(--fade-delay, 0s), var(--fade-delay, 0s);
+}
+
+.grow-bar {
+  transform-origin: left;
+  animation: grow-bar 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
