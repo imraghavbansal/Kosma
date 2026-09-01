@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TraceOS",
+  title: "Kosma",
   description: "Know what a change will break before you ship it.",
 };
 

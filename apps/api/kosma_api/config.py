@@ -11,10 +11,10 @@ class Settings(BaseSettings):
     # Supabase Postgres connection string (Project Settings -> Database -> Connection
     # string, "Session pooler" or direct connection). No local Postgres/Docker for V1.
     database_url: str = "postgresql+psycopg://user:password@host:5432/postgres"
-    dashboard_secret: str = Field(default="change-me", validation_alias="TRACEOS_DASHBOARD_SECRET")
-    session_cookie_name: str = "traceos_session"
+    dashboard_secret: str = Field(default="change-me", validation_alias="KOSMA_DASHBOARD_SECRET")
+    session_cookie_name: str = "kosma_session"
     session_secret_key: str = Field(
-        default="change-me-session-signing-key", validation_alias="TRACEOS_SESSION_SECRET_KEY"
+        default="change-me-session-signing-key", validation_alias="KOSMA_SESSION_SECRET_KEY"
     )
     ai_provider: str = Field(default="mock", validation_alias="AI_PROVIDER")
     embedding_dim: int = 1536

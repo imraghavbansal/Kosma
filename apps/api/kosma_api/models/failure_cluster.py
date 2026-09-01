@@ -4,8 +4,8 @@ from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from traceos_api.db.base import Base
-from traceos_api.models.mixins import IDMixin, TimestampMixin
+from kosma_api.db.base import Base
+from kosma_api.models.mixins import IDMixin, TimestampMixin
 
 
 class FailureCluster(IDMixin, TimestampMixin, Base):

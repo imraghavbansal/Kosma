@@ -1,4 +1,4 @@
-from traceos_api.auth import hash_api_key
+from kosma_api.auth import hash_api_key
 
 
 def test_login_rejects_wrong_secret(client):

@@ -3,8 +3,8 @@ from datetime import date
 from sqlalchemy import Date, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from traceos_api.db.base import Base
-from traceos_api.models.mixins import IDMixin
+from kosma_api.db.base import Base
+from kosma_api.models.mixins import IDMixin
 
 
 class ModelPricing(IDMixin, Base):

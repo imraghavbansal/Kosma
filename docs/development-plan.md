@@ -1,4 +1,4 @@
-# TraceOS V1 Development Plan
+# Kosma V1 Development Plan
 
 Working style: implement one phase, run it, test it, report exactly what works and what
 doesn't, pause for review before the next phase. No phase is claimed done without having
@@ -17,7 +17,7 @@ login; `alembic upgrade head` creates every table in database-schema.md; `GET /v
 returns 200 from a running container.
 
 ## Phase 2 — SDK + Ingestion
-Build: `traceos` Python SDK (`trace()`/`span()`), `POST /v1/traces`, hashed API-key auth,
+Build: `kosma` Python SDK (`trace()`/`span()`), `POST /v1/traces`, hashed API-key auth,
 persistence of trace+spans+tool_calls+retrieval_events.
 DoD: a standalone script using the SDK sends one real trace against a running API, and
 `GET /v1/traces/{id}` returns it with correct span hierarchy. Unit tests for the SDK's

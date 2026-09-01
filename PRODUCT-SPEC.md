@@ -1,10 +1,10 @@
-# TraceOS — Reconciled Master Specification (V1)
+# Kosma — Reconciled Master Specification (V1)
 
 Status: approved scope, pre-implementation. Supersedes prior draft specs where they conflict.
 
 ## 1. Product identity
 
-TraceOS is an **AI Change Intelligence System**, not an observability, debugging, or RCA
+Kosma is an **AI Change Intelligence System**, not an observability, debugging, or RCA
 platform. Those capabilities exist, but only as substrate feeding the actual product.
 
 Tagline: **"Know what a change will break before you ship it."**
@@ -23,14 +23,14 @@ Flagship workflow:
 
 ```
 ENGINEER PROPOSES CHANGE
-  → TraceOS finds comparable historical executions
+  → Kosma finds comparable historical executions
   → runs counterfactual replay against a representative sample
   → produces an evidence-backed impact report, segmented by workflow
   → recommends SHIP / MODIFY / BLOCK with stated confidence
   → (once shipped) compares predicted vs actual outcome
 ```
 
-## 2. What TraceOS is explicitly NOT (V1)
+## 2. What Kosma is explicitly NOT (V1)
 
 - Not a Langfuse/LangSmith-style generic trace viewer as the primary surface.
 - Not an OTLP-first observability backend (SDK-only ingestion for V1).
@@ -46,7 +46,7 @@ ENGINEER PROPOSES CHANGE
 |---|---|---|
 | Change types | Prompt + model/config changes only | Cohort matching and replay are well-defined here. Retrieval/tool-schema changes need a much bigger feature space — V2. |
 | Auth/tenancy | Single-tenant, shared-secret | Schema keeps `organization_id`/`project_id` so it isn't a rewrite later; no signup/login/RBAC UI to build now. |
-| Ingestion | TraceOS Python SDK only | Proves the core loop without building a spec-compliant OTLP collector. OTLP is V2, for interoperability. |
+| Ingestion | Kosma Python SDK only | Proves the core loop without building a spec-compliant OTLP collector. OTLP is V2, for interoperability. |
 | Prediction method | Cohort statistics (match → replay → compare) | Fully honest with no training data; matches the "never fabricate certainty" principle. |
 | AI calls | Mock provider only | Deterministic, zero-cost, clearly labeled DEMO DATA. Real provider abstraction exists in code but isn't exercised in V1. |
 | Deployment | Local (docker compose) only | No hosting cost/infra for a portfolio-stage project. |
@@ -68,9 +68,9 @@ ENGINEER PROPOSES CHANGE
 1. **Blast Radius Diff** — one visual per proposed change showing which workflows/segments
    gain vs lose, computed from real cohort replay.
 2. **Prediction Scorecard** — every impact report is graded against actual post-ship
-   outcome once available; TraceOS's own forecasting accuracy becomes visible over time.
+   outcome once available; Kosma's own forecasting accuracy becomes visible over time.
 3. **Ship / Modify / Block gate** — the whole analysis collapses into one CI-check-shaped
-   object (status + confidence + evidence), so TraceOS reads like a gate a deploy process
+   object (status + confidence + evidence), so Kosma reads like a gate a deploy process
    asks permission from, not a dashboard someone remembers to check.
 
 ## 6. Post-V1 direction (not built now)
@@ -80,7 +80,7 @@ ENGINEER PROPOSES CHANGE
   alerting, deployment-triggered baseline tracking.
 - V3: "AI Reliability Engineer" — investigation → hypothesis → reproduction → proposed
   fix → regression tests → validation → PR, always human-approved, never autonomous.
-- V4: TraceOS as the general reliability control plane across agents, models, prompts,
+- V4: Kosma as the general reliability control plane across agents, models, prompts,
   retrieval, memory, tools, deployments — continuously learning the customer's system.
 
 See `docs/development-plan.md` for the phase-by-phase V1 build order and definition of done.

@@ -1,4 +1,4 @@
-# TraceOS Database Schema (V1)
+# Kosma Database Schema (V1)
 
 PostgreSQL + pgvector. All tables have `id` (uuid, pk) and `created_at` (timestamptz,
 default now()) unless noted. Foreign keys cascade on delete for child rows of a project

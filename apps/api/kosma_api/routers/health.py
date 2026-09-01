@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from traceos_api.db.session import get_db
+from kosma_api.db.session import get_db
 
 router = APIRouter(tags=["health"])
 

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel
 
-from traceos_api.auth import create_session_token, verify_dashboard_secret
-from traceos_api.config import get_settings
+from kosma_api.auth import create_session_token, verify_dashboard_secret
+from kosma_api.config import get_settings
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
 settings = get_settings()

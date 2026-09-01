@@ -1,4 +1,4 @@
-# TraceOS Architecture (V1)
+# Kosma Architecture (V1)
 
 > **Revision (2026-08-26)**: local dev moved off Docker. Docker Desktop proved
 > unreliable on the primary dev machine (`vpnkit-bridge handshake failed` — a known
@@ -13,13 +13,13 @@
 
 ```
 ┌────────────────────┐
-│   DEMO AGENT        │  Python, uses TraceOS SDK, MockProvider only
+│   DEMO AGENT        │  Python, uses Kosma SDK, MockProvider only
 │ (customer support)  │
 └──────────┬──────────┘
            │ trace() / span()
            ▼
 ┌────────────────────┐
-│   TraceOS SDK        │  buffers a trace's spans/tool_calls/retrieval_events,
+│   Kosma SDK        │  buffers a trace's spans/tool_calls/retrieval_events,
 │ (packages/sdk)        │  submits as one payload on trace completion
 └──────────┬──────────┘
            │ POST /v1/traces  (Bearer: project API key)
@@ -67,7 +67,7 @@ Format: Problem → Options → Decision → Reason → Tradeoff.
 - **Decision**: FastAPI.
 - **Reason**: native async, Pydantic validation matches the trace/span payload shape well,
   automatic OpenAPI docs satisfy the API-contract requirement for free.
-- **Tradeoff**: smaller ecosystem than Django for things TraceOS doesn't need (admin UI,
+- **Tradeoff**: smaller ecosystem than Django for things Kosma doesn't need (admin UI,
   ORM batteries) — acceptable, SQLAlchemy fills the ORM gap.
 
 ### Why PostgreSQL + pgvector (no separate vector DB)
@@ -144,7 +144,7 @@ Format: Problem → Options → Decision → Reason → Tradeoff.
 - **Problem**: spec describes full multi-tenant org/user/RBAC/audit.
 - **Decision**: keep `organizations` and `projects` tables (so the schema shape supports
   multi-tenancy later) but gate the dashboard with one shared secret
-  (`TRACEOS_DASHBOARD_SECRET`) and gate ingestion with a per-project hashed API key.
+  (`KOSMA_DASHBOARD_SECRET`) and gate ingestion with a per-project hashed API key.
 - **Reason**: this is a single-operator portfolio deployment; building real signup/login/
   RBAC is a lot of code that doesn't touch the product's actual thesis.
 - **Tradeoff**: not production-multi-tenant — documented as a known V1 limitation.
@@ -159,11 +159,11 @@ Format: Problem → Options → Decision → Reason → Tradeoff.
 ## 3. Repository structure
 
 ```
-traceos/
+kosma/
   apps/
     web/                    # Next.js dashboard (TypeScript, Tailwind, shadcn/ui)
     api/                    # FastAPI backend
-      traceos_api/
+      kosma_api/
         ingestion/           # POST /v1/traces, auth, payload validation
         change_engine/       # cohort matching, replay, impact report, ship/measure
         analytics/           # overview, failure clusters, evaluations
@@ -175,8 +175,8 @@ traceos/
       tests/
     demo-agent/              # seeded customer-support agent + seed script
   packages/
-    sdk/                     # traceos Python SDK (pip-installable)
-      traceos/
+    sdk/                     # kosma Python SDK (pip-installable)
+      kosma/
         trace.py
         span.py
         client.py

@@ -3,9 +3,9 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from traceos_api.config import get_settings
-from traceos_api.db.base import Base
-from traceos_api.models import *  # noqa: F401,F403  (registers all models on Base.metadata)
+from kosma_api.config import get_settings
+from kosma_api.db.base import Base
+from kosma_api.models import *  # noqa: F401,F403  (registers all models on Base.metadata)
 
 config = context.config
 if config.config_file_name is not None:

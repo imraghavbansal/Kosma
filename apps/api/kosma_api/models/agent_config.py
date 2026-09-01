@@ -5,8 +5,8 @@ from sqlalchemy import Boolean, Enum, Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from traceos_api.db.base import Base
-from traceos_api.models.mixins import IDMixin, TimestampMixin
+from kosma_api.db.base import Base
+from kosma_api.models.mixins import IDMixin, TimestampMixin
 
 
 class AgentConfigKind(str, enum.Enum):

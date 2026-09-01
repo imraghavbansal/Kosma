@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SESSION_COOKIE_NAME = "traceos_session";
+const SESSION_COOKIE_NAME = "kosma_session";
 const PUBLIC_PATHS = ["/login"];
 
 export function middleware(request: NextRequest) {

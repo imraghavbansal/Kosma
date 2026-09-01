@@ -3,7 +3,7 @@
 # no Docker dependency at all - this file is here only for anyone who'd rather
 # containerize the two app processes. It does not run Postgres or Redis locally;
 # DATABASE_URL in ../.env must point at your Supabase project either way.
-name: traceos
+name: kosma
 
 services:
   api:
@@ -13,7 +13,7 @@ services:
       - ../.env
     ports:
       - "8000:8000"
-    command: sh -c "alembic upgrade head && uvicorn traceos_api.main:app --host 0.0.0.0 --port 8000"
+    command: sh -c "alembic upgrade head && uvicorn kosma_api.main:app --host 0.0.0.0 --port 8000"
 
   web:
     build:

@@ -6,13 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from traceos_api.config import get_settings
-from traceos_api.routers import auth, health
+from kosma_api.config import get_settings
+from kosma_api.routers import auth, health
 
-logger = logging.getLogger("traceos_api")
+logger = logging.getLogger("kosma_api")
 settings = get_settings()
 
-app = FastAPI(title="TraceOS API", version="0.1.0")
+app = FastAPI(title="Kosma API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,

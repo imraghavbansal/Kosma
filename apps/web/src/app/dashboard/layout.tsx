@@ -32,7 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className="flex w-60 shrink-0 flex-col border-r border-border px-4 py-6">
         <div className="mb-8 px-2">
           <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
-            TRACEOS
+            KOSMA
           </span>
         </div>
         <nav className="flex-1 space-y-6">

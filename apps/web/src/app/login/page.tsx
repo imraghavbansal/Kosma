@@ -26,7 +26,7 @@ export default function LoginPage() {
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("Could not reach the TraceOS API.");
+      setError("Could not reach the Kosma API.");
     } finally {
       setLoading(false);
     }
@@ -36,7 +36,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-8">
         <div className="mb-8">
-          <h1 className="font-mono text-lg tracking-tight text-foreground">TRACEOS</h1>
+          <h1 className="font-mono text-lg tracking-tight text-foreground">KOSMA</h1>
           <p className="mt-1 text-sm text-muted">
             Know what a change will break before you ship it.
           </p>

@@ -4,7 +4,7 @@ import hmac
 from fastapi import Cookie, HTTPException, status
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
-from traceos_api.config import get_settings
+from kosma_api.config import get_settings
 
 settings = get_settings()
 
@@ -12,7 +12,7 @@ SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7  # 7 days
 
 
 def _serializer() -> URLSafeTimedSerializer:
-    return URLSafeTimedSerializer(settings.session_secret_key, salt="traceos-dashboard-session")
+    return URLSafeTimedSerializer(settings.session_secret_key, salt="kosma-dashboard-session")
 
 
 def create_session_token() -> str:
