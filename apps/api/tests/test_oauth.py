@@ -46,8 +46,24 @@ def test_github_session_token_round_trips_user_id(client, db_session, settings):
     db_session.commit()
 
 
-def test_github_login_without_configured_client_id_returns_503(client):
+def test_github_login_without_configured_client_id_returns_503(client, monkeypatch):
+    import kosma_api.routers.oauth as oauth_module
+
+    monkeypatch.setattr(oauth_module.settings, "github_client_id", "")
     response = client.get("/v1/auth/github/login", follow_redirects=False)
-    # local test env has no GITHUB_CLIENT_ID set - must fail loudly, not
-    # silently redirect somewhere broken
+    # must fail loudly when unconfigured, not silently redirect somewhere broken
     assert response.status_code == 503
+
+
+def test_github_login_redirects_to_github_when_configured(client, monkeypatch):
+    import kosma_api.routers.oauth as oauth_module
+
+    monkeypatch.setattr(oauth_module.settings, "github_client_id", "test-client-id")
+    response = client.get("/v1/auth/github/login", follow_redirects=False)
+    assert response.status_code == 307
+    location = response.headers["location"]
+    assert location.startswith("https://github.com/login/oauth/authorize")
+    assert "client_id=test-client-id" in location
+    assert "state=" in location
+    # CSRF state cookie set so the callback can verify it later
+    assert "kosma_oauth_state" in response.cookies
