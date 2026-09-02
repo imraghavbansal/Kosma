@@ -1,10 +1,9 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { serverApiFetch } from "@/lib/api-server";
 import { formatRelativeTime } from "@/lib/format";
 import type { ChangeProposal, ImpactReport, PredictionOutcome } from "@/lib/types";
 import { Badge } from "@/components/badge";
-import { BlastRadiusDiff } from "@/components/blast-radius-diff";
+import { BlastRadiusExplorer } from "@/components/blast-radius-explorer";
 import { ShipGate } from "@/components/ship-gate";
 import { AnalyzeButton } from "@/components/analyze-button";
 import { GenerateRegressionSuiteButton, ShipButton } from "@/components/change-actions";
@@ -69,65 +68,7 @@ export default async function ChangeDetailPage({ params }: { params: Promise<{ i
             />
           </div>
 
-          <div>
-            <p className="mb-3 text-xs font-medium tracking-wider text-muted">
-              BLAST RADIUS DIFF - BY WORKFLOW / SEGMENT
-            </p>
-            <div className="rounded-lg border border-border bg-surface p-5">
-              <BlastRadiusDiff segments={report.segment_metrics} />
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-3 text-xs font-medium tracking-wider text-muted">
-              EVIDENCE - BASELINE VS REPLAY TRACE PAIRS
-            </p>
-            <div className="overflow-hidden rounded-lg border border-border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-surface-2 text-left text-xs text-muted">
-                    <th className="px-4 py-2 font-medium">Segment</th>
-                    <th className="px-4 py-2 font-medium">Tier</th>
-                    <th className="px-4 py-2 font-medium">Baseline trace</th>
-                    <th className="px-4 py-2 font-medium">Replay trace</th>
-                    <th className="px-4 py-2 font-medium">Note</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.evidence.slice(0, 30).map((e) => (
-                    <tr key={e.id} className="border-b border-border last:border-0 hover:bg-surface-2">
-                      <td className="px-4 py-2 text-xs text-foreground/80">{e.segment}</td>
-                      <td className="px-4 py-2">
-                        <Badge variant="neutral">{e.evidence_tier}</Badge>
-                      </td>
-                      <td className="px-4 py-2">
-                        <Link
-                          href={`/dashboard/traces/${e.baseline_trace_id}`}
-                          className="font-mono text-xs text-accent hover:underline"
-                        >
-                          {e.baseline_trace_id.slice(0, 8)}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-2">
-                        <Link
-                          href={`/dashboard/traces/${e.replay_trace_id}`}
-                          className="font-mono text-xs text-accent hover:underline"
-                        >
-                          {e.replay_trace_id.slice(0, 8)}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-2 text-xs text-danger">{e.note ?? ""}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {report.evidence.length > 30 && (
-              <p className="mt-2 text-xs text-muted">
-                Showing 30 of {report.evidence.length} replayed pairs.
-              </p>
-            )}
-          </div>
+          <BlastRadiusExplorer segments={report.segment_metrics} evidence={report.evidence} />
 
           <div className="flex items-center gap-3 border-t border-border pt-6">
             <GenerateRegressionSuiteButton impactReportId={report.id} />

@@ -2,19 +2,41 @@
 
 import type { SegmentMetrics } from "@/lib/types";
 
-export function BlastRadiusDiff({ segments }: { segments: SegmentMetrics[] }) {
+export function BlastRadiusDiff({
+  segments,
+  onSelectSegment,
+  selectedSegment,
+}: {
+  segments: SegmentMetrics[];
+  onSelectSegment?: (segment: string) => void;
+  selectedSegment?: string | null;
+}) {
   const sorted = [...segments].sort((a, b) => a.success_delta - b.success_delta);
   const maxAbsDelta = Math.max(...sorted.map((s) => Math.abs(s.success_delta)), 0.05);
+  const clickable = Boolean(onSelectSegment);
 
   return (
     <div className="space-y-2.5">
       {sorted.map((segment, i) => {
         const pct = (segment.success_delta / maxAbsDelta) * 50; // % of half-width
         const isRegression = segment.success_delta < 0;
+        const isSelected = selectedSegment === segment.segment;
         return (
           <div
             key={segment.segment}
-            className="stagger-fade-in group rounded-md transition-colors duration-150 hover:bg-surface-2/40"
+            onClick={clickable ? () => onSelectSegment?.(segment.segment) : undefined}
+            role={clickable ? "button" : undefined}
+            tabIndex={clickable ? 0 : undefined}
+            onKeyDown={
+              clickable
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") onSelectSegment?.(segment.segment);
+                  }
+                : undefined
+            }
+            className={`stagger-fade-in group rounded-md transition-colors duration-150 ${
+              clickable ? "cursor-pointer" : ""
+            } ${isSelected ? "bg-surface-2 ring-1 ring-accent/40" : "hover:bg-surface-2/40"}`}
             style={{ "--fade-delay": `${i * 0.08}s` } as React.CSSProperties}
           >
             <div className="mb-1 flex items-center justify-between text-xs">
