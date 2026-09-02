@@ -145,7 +145,8 @@ textarea {
     linear-gradient(var(--color-border) 1px, transparent 1px),
     linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
   background-size: 40px 40px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 90%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 40%, black 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 40%, black 20%, transparent 75%);
 }
 
 .bg-glow {
@@ -168,8 +169,13 @@ textarea {
 }
 
 .grow-bar {
-  transform-origin: left;
   animation: grow-bar 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.stagger-fade-in {
+  opacity: 0;
+  animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--fade-delay, 0s);
 }
 
 @keyframes blink {

@@ -38,7 +38,7 @@ export default function LoginPage() {
   return (
     <main className="grid min-h-screen bg-background lg:h-screen lg:grid-cols-2 lg:overflow-hidden">
       <div className="relative flex h-full items-center justify-center overflow-y-auto px-4 py-16 lg:py-8">
-        <div className="bg-grid pointer-events-none absolute inset-0 opacity-[0.15] lg:hidden" />
+        <div className="bg-grid bg-glow pointer-events-none absolute inset-0 opacity-[0.2]" />
         <div className="starfield" aria-hidden="true" />
         <div className="absolute right-6 top-6 z-20">
           <ThemeToggle />
@@ -58,7 +58,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-surface p-8 shadow-sm">
+          <div className="relative rounded-xl border border-border bg-surface p-8 shadow-sm transition-all duration-300 ease-premium hover:-translate-y-0.5 hover:shadow-lg">
             <a
               href="/api/v1/auth/github/login"
               className="flex w-full items-center justify-center gap-2 rounded-md bg-accent px-3 py-2.5 text-sm font-medium text-accent-foreground transition-all duration-150 ease-premium hover:opacity-90 active:scale-[0.98]"
