@@ -16,6 +16,7 @@ from kosma_api.routers import (
     change_engine,
     command_center,
     github,
+    github_webhook,
     health,
     ingestion,
     oauth,
@@ -95,3 +96,4 @@ app.include_router(projects.router)
 app.include_router(command_center.router)
 app.include_router(scorecard.router)
 app.include_router(behavioral_memory.router)
+app.include_router(github_webhook.router)

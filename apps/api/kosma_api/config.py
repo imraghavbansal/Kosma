@@ -63,6 +63,14 @@ class Settings(BaseSettings):
     # origin, not the API's.
     frontend_url: str = Field(default="http://localhost:3000", validation_alias="FRONTEND_URL")
 
+    # GitHub App (separate from the OAuth App above): posts SHIP/MODIFY/BLOCK
+    # verdicts as PR comments. Created in GitHub's UI, not by this app - see
+    # routers/github_webhook.py's docstring for setup. Empty until configured;
+    # the webhook endpoint returns 503 rather than silently no-op-ing.
+    github_app_id: str = Field(default="", validation_alias="GITHUB_APP_ID")
+    github_app_private_key: str = Field(default="", validation_alias="GITHUB_APP_PRIVATE_KEY")
+    github_app_webhook_secret: str = Field(default="", validation_alias="GITHUB_APP_WEBHOOK_SECRET")
+
 
 @lru_cache
 def get_settings() -> Settings:
