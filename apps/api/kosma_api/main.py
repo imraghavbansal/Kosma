@@ -13,6 +13,7 @@ from kosma_api.routers import (
     analytics,
     auth,
     change_engine,
+    command_center,
     github,
     health,
     ingestion,
@@ -20,6 +21,7 @@ from kosma_api.routers import (
     projects,
     public,
     regression_tests,
+    scorecard,
     traces,
 )
 
@@ -89,3 +91,5 @@ app.include_router(analytics.router)
 app.include_router(public.router)
 app.include_router(github.router)
 app.include_router(projects.router)
+app.include_router(command_center.router)
+app.include_router(scorecard.router)

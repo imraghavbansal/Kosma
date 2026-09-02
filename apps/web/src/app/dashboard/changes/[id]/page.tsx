@@ -29,7 +29,7 @@ export default async function ChangeDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="p-8">
-      <BackLink href="/dashboard" label="Propose a Change" />
+      <BackLink href="/dashboard" label="Command Center" />
       <div className="mb-1 flex items-center gap-3">
         <h1 className="font-mono text-lg text-foreground">CHANGE PROPOSAL</h1>
         <Badge variant={proposal.status === "shipped" ? "accent" : proposal.status === "analyzed" ? "success" : "neutral"}>

@@ -195,6 +195,49 @@ export interface PredictionOutcome {
   created_at: string;
 }
 
+export interface CalibrationPoint {
+  change_proposal_id: string;
+  segment: string;
+  predicted_direction: "regression" | "improvement" | "flat";
+  actual_direction: "regression" | "improvement" | "flat";
+  correct: boolean;
+  predicted_delta: number;
+  actual_delta: number;
+}
+
+export interface CalibrationSummary {
+  total_predictions: number;
+  segments_evaluated: number;
+  segments_pending_live_data: number;
+  correct_direction_count: number;
+  calibration_rate: number | null;
+  false_positive_count: number;
+  false_negative_count: number;
+  mean_absolute_error: number | null;
+  points: CalibrationPoint[];
+}
+
+export interface CommandCenterProposal {
+  id: string;
+  description: string | null;
+  status: string;
+  agent_name: string | null;
+  created_at: string;
+  recommendation: Recommendation | null;
+  confidence: number | null;
+}
+
+export interface CommandCenterData {
+  waiting_for_review: CommandCenterProposal[];
+  highest_risk: CommandCenterProposal[];
+  recent_verdicts: CommandCenterProposal[];
+  awaiting_outcome_verification: CommandCenterProposal[];
+  prediction_accuracy: {
+    calibration_rate: number | null;
+    segments_evaluated: number;
+  };
+}
+
 export interface ProjectSummary {
   id: string;
   name: string;

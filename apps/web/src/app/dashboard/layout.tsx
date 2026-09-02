@@ -11,7 +11,8 @@ const NAV = [
   {
     section: "CHANGE INTELLIGENCE",
     items: [
-      { label: "Propose a Change", href: "/dashboard" },
+      { label: "Command Center", href: "/dashboard" },
+      { label: "Propose a Change", href: "/dashboard/propose" },
       { label: "Prediction Scorecard", href: "/dashboard/scorecard" },
     ],
   },
@@ -34,7 +35,8 @@ const NAV = [
 ];
 
 const PAGE_TITLES: Record<string, string> = {
-  "/dashboard": "Propose a Change",
+  "/dashboard": "Command Center",
+  "/dashboard/propose": "Propose a Change",
   "/dashboard/scorecard": "Prediction Scorecard",
   "/dashboard/traces": "Traces",
   "/dashboard/failure-clusters": "Failure Clusters",

@@ -80,3 +80,83 @@ def compute_prediction_outcome(db: Session, change_proposal: ChangeProposal) -> 
     db.commit()
     db.refresh(outcome)
     return outcome
+
+
+DIRECTION_DEADBAND = 0.01  # deltas smaller than this count as "flat", not a direction
+
+
+def _direction(delta: float) -> str:
+    if delta < -DIRECTION_DEADBAND:
+        return "regression"
+    if delta > DIRECTION_DEADBAND:
+        return "improvement"
+    return "flat"
+
+
+def compute_calibration_summary(db: Session) -> dict:
+    """How much should you trust Kosma's predictions? Aggregates every
+    prediction-outcome pair Kosma has ever produced (not just one change) into
+    a real calibration number: for each segment where real live traffic
+    existed to check against, did the predicted direction (regression /
+    improvement / flat) match what actually happened. Segments with no live
+    candidate traffic yet are excluded, not counted as correct or wrong -
+    they're simply not evaluable."""
+    outcomes = list(db.scalars(select(PredictionOutcome).where(PredictionOutcome.evaluated_at.is_not(None))))
+
+    evaluated = 0
+    correct = 0
+    false_positives = 0  # predicted regression, actual was not
+    false_negatives = 0  # predicted fine, actual regressed
+    absolute_errors: list[float] = []
+    points: list[dict] = []
+
+    for outcome in outcomes:
+        for segment, predicted in outcome.predicted_metrics.items():
+            actual = outcome.actual_metrics.get(segment)
+            if not actual or actual.get("status") == "insufficient_data":
+                continue
+            baseline_rate = predicted.get("baseline_success_rate", 0.0)
+            actual_delta = actual["actual_success_rate"] - baseline_rate
+            predicted_delta = predicted.get("success_delta", 0.0)
+
+            predicted_dir = _direction(predicted_delta)
+            actual_dir = _direction(actual_delta)
+            is_correct = predicted_dir == actual_dir
+
+            evaluated += 1
+            if is_correct:
+                correct += 1
+            if predicted_dir == "regression" and actual_dir != "regression":
+                false_positives += 1
+            if predicted_dir != "regression" and actual_dir == "regression":
+                false_negatives += 1
+            absolute_errors.append(abs(outcome.prediction_error.get(segment, actual_delta - predicted_delta)))
+
+            points.append(
+                {
+                    "change_proposal_id": str(outcome.change_proposal_id),
+                    "segment": segment,
+                    "predicted_direction": predicted_dir,
+                    "actual_direction": actual_dir,
+                    "correct": is_correct,
+                    "predicted_delta": predicted_delta,
+                    "actual_delta": round(actual_delta, 4),
+                }
+            )
+
+    return {
+        "total_predictions": len(outcomes),
+        "segments_evaluated": evaluated,
+        "segments_pending_live_data": sum(
+            1
+            for outcome in outcomes
+            for a in outcome.actual_metrics.values()
+            if a.get("status") == "insufficient_data"
+        ),
+        "correct_direction_count": correct,
+        "calibration_rate": round(correct / evaluated, 4) if evaluated else None,
+        "false_positive_count": false_positives,
+        "false_negative_count": false_negatives,
+        "mean_absolute_error": round(sum(absolute_errors) / len(absolute_errors), 4) if absolute_errors else None,
+        "points": points,
+    }
