@@ -12,6 +12,7 @@ from kosma_api.routers import (
     agents,
     analytics,
     auth,
+    behavioral_memory,
     change_engine,
     command_center,
     github,
@@ -93,3 +94,4 @@ app.include_router(github.router)
 app.include_router(projects.router)
 app.include_router(command_center.router)
 app.include_router(scorecard.router)
+app.include_router(behavioral_memory.router)

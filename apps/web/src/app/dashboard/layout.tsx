@@ -14,6 +14,7 @@ const NAV = [
       { label: "Command Center", href: "/dashboard" },
       { label: "Propose a Change", href: "/dashboard/propose" },
       { label: "Prediction Scorecard", href: "/dashboard/scorecard" },
+      { label: "Behavioral Memory", href: "/dashboard/memory" },
     ],
   },
   {
@@ -38,6 +39,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard": "Command Center",
   "/dashboard/propose": "Propose a Change",
   "/dashboard/scorecard": "Prediction Scorecard",
+  "/dashboard/memory": "Behavioral Memory",
   "/dashboard/traces": "Traces",
   "/dashboard/failure-clusters": "Failure Clusters",
   "/dashboard/regression-tests": "Regression Tests",

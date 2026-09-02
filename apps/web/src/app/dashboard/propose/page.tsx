@@ -122,6 +122,11 @@ export default async function ProposePage() {
             title="Prediction Scorecard"
             desc="Kosma grading its own forecasts against reality"
           />
+          <QuickLink
+            href="/dashboard/memory"
+            title="Behavioral Memory"
+            desc="Search every past change - has this broken before?"
+          />
         </div>
       </Section>
     </div>
