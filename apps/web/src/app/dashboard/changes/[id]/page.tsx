@@ -9,6 +9,7 @@ import { ShipGate } from "@/components/ship-gate";
 import { AnalyzeButton } from "@/components/analyze-button";
 import { GenerateRegressionSuiteButton, ShipButton } from "@/components/change-actions";
 import { BackLink } from "@/components/back-link";
+import { CountUp } from "@/components/count-up";
 
 export default async function ChangeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -48,8 +49,8 @@ export default async function ChangeDetailPage({ params }: { params: Promise<{ i
           <ShipGate recommendation={report.recommendation} confidence={report.confidence} />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Metric label="Cohort" value={report.cohort_size.toLocaleString()} />
-            <Metric label="Replayed" value={report.sample_size.toLocaleString()} />
+            <Metric label="Cohort" value={<CountUp value={report.cohort_size} />} />
+            <Metric label="Replayed" value={<CountUp value={report.sample_size} />} />
             <Metric
               label="Overall success"
               value={`${report.overall_metrics.success_delta >= 0 ? "+" : ""}${(
@@ -164,9 +165,9 @@ export default async function ChangeDetailPage({ params }: { params: Promise<{ i
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-3">
+    <div className="rounded-lg border border-border bg-surface p-3 transition-all duration-200 ease-premium hover:-translate-y-0.5 hover:border-border-strong hover:shadow-sm">
       <p className="text-[10px] font-medium tracking-wider text-muted">{label.toUpperCase()}</p>
       <p className="mt-1 font-mono text-sm text-foreground">{value}</p>
     </div>

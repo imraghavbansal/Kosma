@@ -5,6 +5,7 @@ import type { TraceDetail } from "@/lib/types";
 import { Badge } from "@/components/badge";
 import { SpanTimeline } from "@/components/span-timeline";
 import { BackLink } from "@/components/back-link";
+import { CountUp } from "@/components/count-up";
 
 export default async function TraceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -42,9 +43,9 @@ export default async function TraceDetailPage({ params }: { params: Promise<{ id
       <p className="mb-6 text-xs text-muted">{formatRelativeTime(trace.created_at)}</p>
 
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-        <Metric label="Duration" value={formatLatency(trace.latency_ms)} />
-        <Metric label="Tokens" value={formatTokens(trace.total_tokens)} />
-        <Metric label="Cost" value={formatCost(trace.estimated_cost)} />
+        <Metric label="Duration" value={<CountUp value={trace.latency_ms} format={(n) => formatLatency(Math.round(n))} />} />
+        <Metric label="Tokens" value={<CountUp value={trace.total_tokens} format={(n) => formatTokens(Math.round(n))} />} />
+        <Metric label="Cost" value={<CountUp value={trace.estimated_cost} format={(n) => formatCost(n)} />} />
         <Metric label="Workflow" value={trace.workflow_tag?.replace("_", " ") ?? "n/a"} />
         <Metric label="Model" value={trace.model_name ?? "n/a"} />
         <Metric
@@ -66,13 +67,11 @@ export default async function TraceDetailPage({ params }: { params: Promise<{ id
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-3 transition-colors duration-150 hover:border-border-strong">
+    <div className="rounded-lg border border-border bg-surface p-3 transition-all duration-200 ease-premium hover:-translate-y-0.5 hover:border-border-strong hover:shadow-sm">
       <p className="text-[10px] font-medium tracking-wider text-muted">{label.toUpperCase()}</p>
-      <p className="mt-1 truncate font-mono text-sm text-foreground" title={value}>
-        {value}
-      </p>
+      <p className="mt-1 truncate font-mono text-sm text-foreground">{value}</p>
     </div>
   );
 }
