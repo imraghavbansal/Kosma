@@ -49,6 +49,20 @@ class Settings(BaseSettings):
     def allowed_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
 
+    # GitHub OAuth: a second login method alongside the shared dashboard secret
+    # (see kosma_api/routers/oauth.py's docstring for the scoping decision).
+    github_client_id: str = Field(default="", validation_alias="GITHUB_CLIENT_ID")
+    github_client_secret: str = Field(default="", validation_alias="GITHUB_CLIENT_SECRET")
+    # Where GitHub redirects back to after authorizing - must exactly match the
+    # OAuth App's registered callback URL.
+    github_oauth_redirect_uri: str = Field(
+        default="http://localhost:8000/v1/auth/github/callback",
+        validation_alias="GITHUB_OAUTH_REDIRECT_URI",
+    )
+    # Where to send the browser after a successful login - the frontend's own
+    # origin, not the API's.
+    frontend_url: str = Field(default="http://localhost:3000", validation_alias="FRONTEND_URL")
+
 
 @lru_cache
 def get_settings() -> Settings:

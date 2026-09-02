@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "./logout-button";
+import { UserBadge } from "@/components/user-badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV = [
@@ -74,6 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           ))}
         </nav>
+        <UserBadge />
         <LogoutButton />
       </aside>
       <main className="flex-1 overflow-x-auto">

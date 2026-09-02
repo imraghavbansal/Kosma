@@ -14,6 +14,7 @@ from kosma_api.models.retrieval_event import RetrievalEvent
 from kosma_api.models.span import Span, SpanType
 from kosma_api.models.tool_call import ToolCall
 from kosma_api.models.trace import Trace, TraceSource, TraceStatus
+from kosma_api.models.user import User
 
 __all__ = [
     "Agent",
@@ -40,4 +41,5 @@ __all__ = [
     "Trace",
     "TraceSource",
     "TraceStatus",
+    "User",
 ]
