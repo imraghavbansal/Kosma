@@ -4,21 +4,81 @@ can show that repo's real commits/PRs next to Kosma's own real trace and
 change-proposal history for it. Linking is explicit (PATCH) - nothing here
 invents a connection that doesn't exist."""
 
+import secrets
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from kosma_api.auth import require_dashboard_session
+from kosma_api.auth import hash_api_key, require_dashboard_session
 from kosma_api.db.session import get_db
 from kosma_api.models.agent import Agent
+from kosma_api.models.agent_config import AgentConfig, AgentConfigKind
 from kosma_api.models.change_proposal import ChangeProposal
+from kosma_api.models.organization import Organization
 from kosma_api.models.project import Project
 from kosma_api.models.trace import Trace
-from kosma_api.schemas.projects import ProjectDetailOut, ProjectPatchIn, ProjectSummaryListOut, ProjectSummaryOut
+from kosma_api.schemas.projects import (
+    ProjectCreateIn,
+    ProjectCreatedOut,
+    ProjectDetailOut,
+    ProjectPatchIn,
+    ProjectSummaryListOut,
+    ProjectSummaryOut,
+)
 
 router = APIRouter(prefix="/v1/projects", tags=["projects"], dependencies=[Depends(require_dashboard_session)])
+
+
+@router.post("", response_model=ProjectCreatedOut, status_code=status.HTTP_201_CREATED)
+def create_project(body: ProjectCreateIn, db: Session = Depends(get_db)) -> ProjectCreatedOut:
+    """Real self-serve onboarding: creates an org/project/agent/baseline
+    config and returns a real, usable API key. This is the actual bridge
+    from "seeded demo data" to "a real user's real traces" - without this,
+    nobody could ever get real data into Kosma."""
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="name is required")
+
+    repo = body.github_repo.strip() if body.github_repo else None
+    if repo is not None and "/" not in repo:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="github_repo must look like owner/name")
+
+    raw_api_key = f"kosma_live_{secrets.token_urlsafe(32)}"
+
+    org = Organization(name=name)
+    db.add(org)
+    db.flush()
+
+    project = Project(organization_id=org.id, name=name, api_key_hash=hash_api_key(raw_api_key), github_repo=repo)
+    db.add(project)
+    db.flush()
+
+    agent = Agent(project_id=project.id, name="Default Agent")
+    db.add(agent)
+    db.flush()
+
+    config = AgentConfig(
+        agent_id=agent.id,
+        kind=AgentConfigKind.model,
+        version_label="v1-baseline",
+        is_baseline=True,
+    )
+    db.add(config)
+    db.commit()
+    db.refresh(project)
+    db.refresh(agent)
+    db.refresh(config)
+
+    return ProjectCreatedOut(
+        id=project.id,
+        name=project.name,
+        github_repo=project.github_repo,
+        api_key=raw_api_key,
+        agent_id=agent.id,
+        agent_config_id=config.id,
+    )
 
 
 @router.get("", response_model=ProjectSummaryListOut)

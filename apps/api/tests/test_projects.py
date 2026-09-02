@@ -1,6 +1,8 @@
 """Projects as real, working units: list/detail reflect real counts, and
 linking a github_repo is a real, persisted PATCH - not a UI-only toggle."""
 
+import uuid
+
 
 def _login(client, settings):
     client.post("/v1/auth/login", json={"secret": settings.dashboard_secret})
@@ -50,3 +52,50 @@ def test_get_project_404_for_unknown_id(client, settings):
     _login(client, settings)
     response = client.get("/v1/projects/00000000-0000-0000-0000-000000000000")
     assert response.status_code == 404
+
+
+def test_create_project_returns_a_working_api_key(client, settings, db_session):
+    _login(client, settings)
+    response = client.post("/v1/projects", json={"name": "real-onboarding-test"})
+    assert response.status_code == 201
+    body = response.json()
+    assert body["api_key"].startswith("kosma_live_")
+    assert body["agent_id"]
+    assert body["agent_config_id"]
+
+    # the returned key must actually authenticate a real trace ingest
+    ingest = client.post(
+        "/v1/traces",
+        headers={"Authorization": f"Bearer {body['api_key']}"},
+        json={
+            "trace_ref": "onboarding-smoke-test-1",
+            "agent_id": body["agent_id"],
+            "agent_config_id": body["agent_config_id"],
+            "input_text": "hello",
+            "status": "completed",
+            "success": True,
+            "latency_ms": 10,
+            "input_tokens": 5,
+            "output_tokens": 5,
+            "spans": [],
+        },
+    )
+    assert ingest.status_code == 202
+
+    from kosma_api.models.organization import Organization
+    from kosma_api.models.project import Project
+
+    project = db_session.get(Project, uuid.UUID(body["id"]))
+    org_id = project.organization_id
+    db_session.delete(project)
+    db_session.commit()
+    org = db_session.get(Organization, org_id)
+    if org is not None:
+        db_session.delete(org)
+        db_session.commit()
+
+
+def test_create_project_rejects_blank_name(client, settings):
+    _login(client, settings)
+    response = client.post("/v1/projects", json={"name": "   "})
+    assert response.status_code == 400

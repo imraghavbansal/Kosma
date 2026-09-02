@@ -4,6 +4,7 @@ import { serverApiFetch } from "@/lib/api-server";
 import { formatRelativeTime } from "@/lib/format";
 import type { ProjectSummary } from "@/lib/types";
 import { Badge } from "@/components/badge";
+import { CreateProject } from "@/components/create-project";
 
 export default async function ProjectsPage() {
   const res = await serverApiFetch("/v1/projects");
@@ -13,18 +14,20 @@ export default async function ProjectsPage() {
 
   return (
     <div className="p-8">
-      <div className="animate-fade-in mb-8">
-        <h1 className="font-mono text-2xl text-foreground">Projects</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted">
-          Each project is a real workspace: link it to a GitHub repo to see that
-          repo&apos;s actual commits and PRs, next to Kosma&apos;s trace and change history
-          for it.
-        </p>
+      <div className="animate-fade-in mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-mono text-2xl text-foreground">Projects</h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted">
+            Create a project to get a real API key, send real traces from your own
+            agent, and link a GitHub repo to see its actual activity.
+          </p>
+        </div>
+        <CreateProject />
       </div>
 
       {projects.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-6">
-          <p className="text-sm text-muted">No projects yet.</p>
+          <p className="text-sm text-muted">No projects yet - create one to get started.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

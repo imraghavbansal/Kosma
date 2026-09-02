@@ -37,3 +37,17 @@ class ProjectDetailOut(BaseModel):
 
 class ProjectPatchIn(BaseModel):
     github_repo: str | None = None
+
+
+class ProjectCreateIn(BaseModel):
+    name: str
+    github_repo: str | None = None
+
+
+class ProjectCreatedOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    github_repo: str | None
+    api_key: str
+    agent_id: uuid.UUID
+    agent_config_id: uuid.UUID
