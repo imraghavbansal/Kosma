@@ -51,3 +51,7 @@ class ProjectCreatedOut(BaseModel):
     api_key: str
     agent_id: uuid.UUID
     agent_config_id: uuid.UUID
+
+
+class ApiKeyOut(BaseModel):
+    api_key: str

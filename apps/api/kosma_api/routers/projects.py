@@ -20,6 +20,7 @@ from kosma_api.models.organization import Organization
 from kosma_api.models.project import Project
 from kosma_api.models.trace import Trace
 from kosma_api.schemas.projects import (
+    ApiKeyOut,
     ProjectCreateIn,
     ProjectCreatedOut,
     ProjectDetailOut,
@@ -126,6 +127,21 @@ def get_project(project_id: uuid.UUID, db: Session = Depends(get_db)) -> Project
         agents=project.agents,
         change_proposals=proposals,
     )
+
+
+@router.post("/{project_id}/regenerate-key", response_model=ApiKeyOut)
+def regenerate_key(project_id: uuid.UUID, db: Session = Depends(get_db)) -> ApiKeyOut:
+    """Invalidates the project's current API key and issues a new one - for
+    when a key is lost, since (like any real API key) it's never stored or
+    shown in plaintext after creation."""
+    project = db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+
+    raw_api_key = f"kosma_live_{secrets.token_urlsafe(32)}"
+    project.api_key_hash = hash_api_key(raw_api_key)
+    db.commit()
+    return ApiKeyOut(api_key=raw_api_key)
 
 
 @router.patch("/{project_id}", response_model=ProjectSummaryOut)

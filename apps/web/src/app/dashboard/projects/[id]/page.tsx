@@ -7,6 +7,7 @@ import { Badge } from "@/components/badge";
 import { BackLink } from "@/components/back-link";
 import { LinkRepo } from "@/components/link-repo";
 import { RepoActivityPanel } from "@/components/repo-activity-panel";
+import { ConnectAgent } from "@/components/connect-agent";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -33,6 +34,11 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         <StatCard label="Agents" value={project.agents.length} />
         <StatCard label="Traces" value={project.trace_count} />
         <StatCard label="Change proposals" value={project.change_proposals.length} />
+      </div>
+
+      <div className="mb-10">
+        <p className="mb-3 text-xs font-medium tracking-wider text-muted">CONNECT</p>
+        <ConnectAgent projectId={project.id} agents={project.agents} />
       </div>
 
       <div className="mb-10">
