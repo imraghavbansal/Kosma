@@ -43,6 +43,7 @@ def public_stats(db: Session = Depends(get_db)) -> dict:
                     "success_delta": s["success_delta"],
                     "baseline_success_rate": s["baseline_success_rate"],
                     "candidate_success_rate": s["candidate_success_rate"],
+                    "sample_size": s["sample_size"],
                 }
                 for s in latest_report.segment_metrics
             ],

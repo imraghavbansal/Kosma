@@ -36,22 +36,25 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen bg-background lg:grid-cols-2">
-      <div className="relative flex items-center justify-center px-4">
+    <main className="grid min-h-screen bg-background lg:h-screen lg:grid-cols-2 lg:overflow-hidden">
+      <div className="relative flex h-full items-center justify-center overflow-y-auto px-4 py-16 lg:py-8">
         <div className="bg-grid pointer-events-none absolute inset-0 opacity-[0.15] lg:hidden" />
-        <div className="absolute right-6 top-6">
+        <div className="absolute right-6 top-6 z-20">
           <ThemeToggle />
         </div>
 
         <div className="relative z-10 w-full max-w-sm animate-fade-in">
-          <div className="mb-8">
-            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-md bg-accent font-mono text-sm font-bold text-accent-foreground">
+          <div className="mb-8 flex items-center gap-3">
+            <div className="glow-pulse flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent font-mono text-sm font-bold text-accent-foreground">
               K
             </div>
-            <h1 className="font-mono text-lg tracking-tight text-foreground">KOSMA</h1>
-            <p className="mt-1 text-sm text-muted">
-              Know what a change will break before you ship it.
-            </p>
+            <div>
+              <h1 className="font-mono text-lg leading-tight tracking-tight text-foreground">KOSMA</h1>
+              <p className="text-xs leading-tight text-muted">
+                Know what a change will break before you ship it
+                <span className="cursor-blink text-accent">_</span>
+              </p>
+            </div>
           </div>
 
           <div className="rounded-xl border border-border bg-surface p-8 shadow-sm">
@@ -65,7 +68,7 @@ export default function LoginPage() {
               Continue with GitHub
             </a>
             <p className="mt-3 text-center text-xs text-muted">
-              No signup needed. Your account is created on first sign-in.
+              No signup needed - your account is created on first sign-in.
             </p>
 
             {!showOwnerAccess ? (
@@ -111,8 +114,8 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-6 text-center text-xs text-muted">
-            GitHub and the owner secret both grant an equally-privileged session on
-            this single-tenant deployment - see <span className="font-mono">docs/architecture.md</span>.
+            Your session stays on this device only. We never touch your repos or code -
+            GitHub is used for sign-in alone.
           </p>
         </div>
       </div>

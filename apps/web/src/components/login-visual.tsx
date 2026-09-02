@@ -32,31 +32,34 @@ export function LoginVisual() {
   }, []);
 
   const report = stats?.latest_impact_report;
+  const MAX_SHOWN = 4;
+  const shownSegments = report?.segment_metrics.slice(0, MAX_SHOWN) ?? [];
+  const hiddenCount = report ? Math.max(report.segment_metrics.length - MAX_SHOWN, 0) : 0;
 
   return (
-    <div className="relative hidden h-full flex-col justify-center overflow-hidden border-l border-border bg-surface px-12 lg:flex">
-      <div className="bg-grid bg-glow pointer-events-none absolute inset-0 opacity-[0.4]" />
+    <div className="relative hidden h-full flex-col justify-center overflow-y-auto border-l border-border bg-surface px-12 py-16 lg:flex">
+      <div className="bg-grid bg-glow pointer-events-none fixed inset-y-0 right-0 w-1/2 opacity-[0.4]" />
 
-      <div className="relative z-10 max-w-md">
+      <div className="relative z-10 mx-auto w-full max-w-md">
         {stats && (
           <div className="animate-fade-in mb-6 flex items-center gap-6 font-mono text-xs text-muted">
-            <span>
+            <span className="flex items-baseline gap-1.5">
               <span className="text-lg text-foreground">
                 <CountUp value={stats.total_traces} />
-              </span>{" "}
+              </span>
               traces analyzed
             </span>
-            <span>
+            <span className="flex items-baseline gap-1.5">
               <span className="text-lg text-foreground">
                 <CountUp value={stats.total_analyzed_changes} />
-              </span>{" "}
+              </span>
               changes evaluated
             </span>
           </div>
         )}
 
         <p className="mb-1 text-[10px] font-medium tracking-wider text-muted">
-          {report ? "REAL BLAST RADIUS DIFF - LIVE DEMO DATA" : "BLAST RADIUS DIFF"}
+          {report ? "REAL BLAST RADIUS DIFF · LIVE DATA" : "BLAST RADIUS DIFF"}
         </p>
         <p className="mb-6 font-mono text-sm text-foreground/90">
           {report
@@ -66,7 +69,12 @@ export function LoginVisual() {
 
         {report ? (
           <div className="animate-fade-in rounded-lg border border-border bg-background/60 p-5 backdrop-blur-sm">
-            <BlastRadiusDiff segments={report.segment_metrics} />
+            <BlastRadiusDiff segments={shownSegments} />
+            {hiddenCount > 0 && (
+              <p className="mt-3 border-t border-border pt-3 text-[10px] text-muted">
+                +{hiddenCount} more segment{hiddenCount === 1 ? "" : "s"} evaluated in the full report
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-3 rounded-lg border border-dashed border-border p-5">
