@@ -13,7 +13,7 @@
 
 ```
 ┌────────────────────┐
-│   DEMO AGENT        │  Python, uses Kosma SDK, MockProvider only
+│   DEMO AGENT        │  Python, uses Kosma SDK, deterministic mock model
 │ (customer support)  │
 └──────────┬──────────┘
            │ trace() / span()
@@ -44,9 +44,11 @@
            ▲
            │ cohort queries, change analysis
 ┌──────────┴──────────┐
-│   Change Engine        │  cohort match → counterfactual replay (MockProvider,
-│ (apps/api)               │  seeded/deterministic) → metric comparison, segmented →
-│                           │  impact report (SHIP/MODIFY/BLOCK + confidence)
+│   Change Engine        │  cohort match → counterfactual replay (deterministic
+│ (apps/api)               │  mock by default; a real OpenAI/Anthropic call per
+│                           │  project that configures llm_provider+API key) →
+│                           │  metric comparison, segmented → impact report
+│                           │  (SHIP/MODIFY/BLOCK/INSUFFICIENT_EVIDENCE + confidence)
 └──────────┬──────────┘
            │ REST (dashboard session cookie)
            ▼
@@ -149,6 +151,36 @@ Format: Problem → Options → Decision → Reason → Tradeoff.
   RBAC is a lot of code that doesn't touch the product's actual thesis.
 - **Tradeoff**: not production-multi-tenant - documented as a known V1 limitation.
 
+### Why GitHub OAuth as a second login method, not per-user isolation
+
+- **Problem**: a shared secret alone doesn't show "who's signed in," and a real login
+  identity is a reasonable thing to want without committing to full multi-tenancy.
+- **Decision**: added GitHub OAuth (`routers/oauth.py`) as a second, equally privileged
+  login method. Signing in creates a real `users` row and a real session, but that
+  session still explores the same shared seeded demo data every session does.
+- **Reason**: building real per-user data isolation means re-scoping every existing
+  endpoint (traces, agents, change proposals, ...) by tenant - genuine V2-scale work,
+  not something to half-do. What's real here is the OAuth handshake, the user record,
+  and the session; what's intentionally narrow is what that session unlocks.
+- **Tradeoff**: two users signed in via GitHub see the same data, not their own -
+  documented, not hidden. Once signed in, a GitHub-authenticated user can also link a
+  project to their real GitHub repo and see its live commits/PRs (`routers/github.py`).
+
+### Why the GitHub App PR bot surfaces the latest verdict instead of analyzing the diff
+
+- **Problem**: the obvious next step for a PR bot is "read the diff, decide if it's an
+  AI change, analyze it." Deciding what counts as a prompt/config change from a raw
+  diff is repo-specific and genuinely unsolved in general.
+- **Decision**: on a `pull_request` webhook event for a repo linked to a Kosma project,
+  `routers/github_webhook.py` posts that project's most recently analyzed change
+  proposal's verdict as a PR comment, rather than running a fresh analysis from the
+  diff.
+- **Reason**: surfacing real, already-computed evidence is honest; guessing at diff
+  classification to trigger a new analysis would not be.
+- **Tradeoff**: the PR comment isn't necessarily about the code in that specific PR -
+  it's the latest verdict for the project. Acceptable for V1; diff-aware triggering is
+  a real V2 problem, not faked here.
+
 ### Why a modular monolith, not microservices
 
 - Same reasoning as the original spec: one FastAPI app (`apps/api`) with clearly
@@ -165,8 +197,11 @@ kosma/
     api/                    # FastAPI backend
       kosma_api/
         ingestion/           # POST /v1/traces, auth, payload validation
-        change_engine/       # cohort matching, replay, impact report, ship/measure
-        analytics/           # overview, failure clusters, evaluations
+        change_engine/       # cohort matching, mock + real LLM replay, impact report, ship/measure
+        analytics/           # failure clusters
+        routers/              # all API endpoints (projects, agents, traces, change engine,
+                               #   behavioral memory, command center, scorecard, GitHub OAuth
+                               #   + activity, GitHub App webhook, public stats, auth)
         models/               # SQLAlchemy models
         schemas/              # Pydantic schemas
         background/             # in-process background tasks (embed, tag, analyze)
@@ -212,8 +247,10 @@ kosma/
    vs candidate config
 7. POST .../analyze: Change Engine queries the cohort (embedding + structured
    filters matching the agent + relevant workflows), samples it, replays the
-   candidate config against each sampled input via MockProvider, computes
-   metrics old vs new per segment, writes impact_report + impact_evidence
+   candidate config against each sampled input (deterministic mock by default,
+   or a real model call plus a real LLM-judge call once the project has
+   configured its own llm_provider/API key), computes metrics old vs new per
+   segment, writes impact_report + impact_evidence
 8. Dashboard renders the Blast Radius Diff and Ship/Modify/Block gate from
    the impact_report, with evidence links back to real trace pairs
 9. Optionally: worst regressions become regression_tests; the change_proposal

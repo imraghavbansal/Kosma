@@ -176,6 +176,7 @@ revision notes for the ones that changed a design decision.
 | 10 | Polish, Tests, Docs | Ongoing |
 | 11 | Deployment | Done |
 | 12 | Self-serve onboarding, real GitHub integration, evidence-first verdicts | Ongoing |
+| 13 | Real LLM replay, behavioral memory, command center, GitHub App PR bot | Done |
 
 Full phase breakdown and definition of done for each is in
 [docs/development-plan.md](docs/development-plan.md).

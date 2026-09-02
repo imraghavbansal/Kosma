@@ -21,6 +21,9 @@ organizations 1──* projects 1──* agents 1──* agent_configs
               failure_cluster_members * ── 1 failure_clusters
 
 change_proposals 1──? prediction_outcomes
+
+users   (standalone: a GitHub-OAuth login identity, not linked to any org/project - see
+         the "users" table notes below)
 ```
 
 ## Tables
@@ -42,7 +45,27 @@ schema change later.
 | organization_id | uuid fk → organizations | |
 | name | text | |
 | api_key_hash | text | sha256 of the ingestion API key, never store plaintext |
+| github_repo | text, nullable | "owner/name", set via `PATCH /v1/projects/{id}`; lets the dashboard and the GitHub App PR bot show/comment on a real linked repo |
+| llm_provider | text, nullable | "openai" or "anthropic"; when set (with `llm_api_key`), the change engine replays with a real model call instead of the deterministic mock |
+| llm_api_key | text, nullable | write-only from the API's perspective, never returned in a response |
 | created_at | timestamptz | |
+
+### users
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| github_id | text, unique | |
+| github_username | text | |
+| display_name | text, nullable | |
+| email | text, nullable | |
+| avatar_url | text, nullable | |
+| github_access_token | text, nullable | used server-side to call the GitHub API on the user's behalf (`routers/github.py`); never included in any API response |
+| created_at | timestamptz | |
+
+A person who signed in via GitHub OAuth (`routers/oauth.py`). Deliberately not linked to
+an `organization`/`project`: a signed-in user explores the same shared seeded demo data
+every session does, not a personal sandbox - real per-user data isolation would mean
+re-scoping every existing endpoint by tenant (see `docs/architecture.md`).
 
 ### agents
 | column | type | notes |
@@ -183,10 +206,11 @@ One-to-one with an analyzed change_proposal.
 | change_proposal_id | uuid fk → change_proposals, unique | |
 | cohort_size | int | total matched historical executions |
 | sample_size | int | number actually replayed |
-| recommendation | enum(SHIP, MODIFY, BLOCK) | |
+| recommendation | enum(SHIP, MODIFY, BLOCK, INSUFFICIENT_EVIDENCE) | INSUFFICIENT_EVIDENCE when no segment cleared the minimum sample bar, rather than defaulting to SHIP |
 | confidence | float | 0-1, calibrated from sample size + effect size, never asserted as certainty |
 | overall_metrics | jsonb | {success_delta, latency_delta_ms, cost_delta, tool_accuracy_delta, groundedness_delta} |
 | segment_metrics | jsonb | array of {segment, cohort_size, ...same metric shape} |
+| replay_method | text | "mock" (deterministic demo model, default) or "real_llm" (the project's configured llm_provider/llm_api_key); never mixed within one report |
 | created_at | timestamptz | |
 
 ### impact_evidence

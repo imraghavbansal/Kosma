@@ -84,12 +84,43 @@ this is the same single-tenant model already built, just reachable from outside 
 DoD: the deployed URL runs the same verified flow as local - login, propose a change,
 see the Blast Radius Diff - with nothing silently different from what passed locally.
 
+## Phase 12 - Self-serve onboarding, real GitHub integration, evidence-first verdicts
+Build: `POST /v1/projects` (create an org/project/agent/baseline config, return a real
+usable API key), `POST /v1/projects/{id}/regenerate-key`, `PATCH /v1/projects/{id}`
+(link/unlink a `github_repo`, set `llm_provider`/`llm_api_key`), `POST
+/v1/agents/{id}/configs` (the missing piece to ever create a candidate config for a
+self-serve project), GitHub OAuth as a second login method (`users` table,
+`/v1/auth/github/login` + `/callback`), real GitHub repo/commit/PR activity
+(`/v1/github/repos`, `/v1/github/activity`, `/v1/github/repos/{owner}/{repo}/activity`),
+`replay_method`/`INSUFFICIENT_EVIDENCE` on impact reports so a verdict never defaults to
+SHIP when no segment cleared the sample-size bar, `/v1/public/stats` for the login page.
+DoD: create a project from the dashboard, get a real API key, send a real trace with it
+via curl, confirm it lands - verified against the deployed backend, not just locally.
+Ongoing (this is where the still-open work in "Status" above lives).
+
+## Phase 13 - Real LLM replay, behavioral memory, command center, GitHub App PR bot
+Build: `kosma_api/change_engine/llm_replay.py` (real OpenAI/Anthropic calls for
+counterfactual replay plus a second real judge call, gated per-project on
+`llm_provider`/`llm_api_key`), `GET /v1/behavioral-memory` (search every change ever
+proposed), `GET /v1/command-center` (dashboard-home triage view), `GET
+/v1/scorecard/calibration` (Kosma's own prediction accuracy as a dedicated endpoint,
+alongside the existing scorecard computation), a GitHub App webhook
+(`POST /v1/github/webhook`) that posts a linked project's latest verdict as a real PR
+comment.
+DoD: analyzing a proposal on a project with a real `llm_provider`/`llm_api_key`
+configured produces an impact report with `replay_method: "real_llm"` and a real model
+response in the replay traces, not a fabricated one; opening a PR against a repo linked
+to a project with an analyzed change produces a real PR comment from the GitHub App.
+
 ## Minimum viable vertical slice
 Phases 1-4: a real trace, sent by a real (mock-backed) agent through the real SDK, stored
 and inspectable in the dashboard. Nothing about the change-intelligence engine is faked
 before this slice works end to end.
 
 ## Explicitly out of scope for V1
-OTLP ingestion, multi-user auth/RBAC, retrieval/tool-schema change types, trained ML
-predictor, automated regression execution against live deployments, third-party
-integrations (GitHub/Slack/Jira), alerting, autonomous fixes.
+OTLP ingestion, full multi-tenant auth/RBAC (per-user data isolation specifically -
+GitHub OAuth as a login method shipped in Phase 12, but every session still explores the
+same shared data), retrieval/tool-schema change types, trained ML predictor, automated
+regression execution against live deployments, Slack/Jira integrations, alerting,
+autonomous fixes (the GitHub App PR bot posts a verdict as a comment, it does not open or
+modify a PR).
