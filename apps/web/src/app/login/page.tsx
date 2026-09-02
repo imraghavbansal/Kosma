@@ -114,8 +114,9 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-6 text-center text-xs text-muted">
-            Your session stays on this device only. We never touch your repos or code -
-            GitHub is used for sign-in alone.
+            Read-only access to your public repos, so we can show real commits and
+            pull requests. We never write to your code, and private repos are never
+            touched.
           </p>
         </div>
       </div>

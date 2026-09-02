@@ -22,3 +22,7 @@ class User(IDMixin, TimestampMixin, Base):
     display_name: Mapped[str | None] = mapped_column(String, nullable=True)
     email: Mapped[str | None] = mapped_column(String, nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    # GitHub's OAuth access token, kept so we can call the GitHub API on the
+    # user's behalf later (real repos/commits, not stored anywhere it could
+    # leak - never included in any API response, see routers/github.py).
+    github_access_token: Mapped[str | None] = mapped_column(String, nullable=True)

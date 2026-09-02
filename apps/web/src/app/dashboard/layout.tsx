@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LogoutButton } from "./logout-button";
-import { UserBadge } from "@/components/user-badge";
+import { UserMenu } from "@/components/user-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV = [
@@ -32,6 +31,16 @@ const NAV = [
   },
 ];
 
+const PAGE_TITLES: Record<string, string> = {
+  "/dashboard": "Propose a Change",
+  "/dashboard/scorecard": "Prediction Scorecard",
+  "/dashboard/traces": "Traces",
+  "/dashboard/failure-clusters": "Failure Clusters",
+  "/dashboard/regression-tests": "Regression Tests",
+  "/dashboard/agents": "Agents & Configs",
+  "/dashboard/settings": "Settings",
+};
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -41,22 +50,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setMobileNavOpen(false);
   }, [pathname]);
 
+  const pageTitle =
+    PAGE_TITLES[pathname] ??
+    (pathname.startsWith("/dashboard/traces/")
+      ? "Trace Detail"
+      : pathname.startsWith("/dashboard/changes/")
+        ? "Change Detail"
+        : "Kosma");
+
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Mobile top bar - hidden on lg+ where the sidebar is always visible */}
-      <div className="fixed inset-x-0 top-0 z-30 flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:hidden">
-        <span className="font-mono text-sm font-semibold tracking-tight text-foreground">KOSMA</span>
-        <button
-          onClick={() => setMobileNavOpen((v) => !v)}
-          aria-label="Toggle navigation"
-          className="flex h-8 w-8 items-center justify-center rounded-md text-foreground transition-colors duration-150 hover:bg-surface-2"
-        >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            {mobileNavOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
-          </svg>
-        </button>
-      </div>
-
       {/* Backdrop for the mobile drawer */}
       {mobileNavOpen && (
         <div
@@ -74,7 +77,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
             KOSMA
           </span>
-          <ThemeToggle />
         </div>
         <nav className="flex-1 space-y-6 overflow-y-auto">
           {NAV.map((group) => (
@@ -108,15 +110,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           ))}
         </nav>
-        <UserBadge />
-        <LogoutButton />
+        <p className="px-2 text-[10px] text-muted">
+          <a
+            href="https://github.com/imraghavbansal/Kosma"
+            target="_blank"
+            rel="noreferrer"
+            className="transition-colors duration-150 hover:text-foreground"
+          >
+            v0.1 · source
+          </a>
+        </p>
       </aside>
 
-      <main className="flex-1 overflow-x-auto pt-14 lg:pt-0">
-        <div key={pathname} className="animate-fade-in">
-          {children}
-        </div>
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-surface/80 px-4 py-3 backdrop-blur-sm lg:px-6">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileNavOpen((v) => !v)}
+              aria-label="Toggle navigation"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-foreground transition-colors duration-150 hover:bg-surface-2 lg:hidden"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                {mobileNavOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+              </svg>
+            </button>
+            <h2 key={pageTitle} className="animate-fade-in font-mono text-sm text-foreground/90">
+              {pageTitle}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <UserMenu />
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-x-auto">
+          <div key={pathname} className="animate-fade-in">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

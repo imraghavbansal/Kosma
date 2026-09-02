@@ -6,6 +6,7 @@ import type { Agent, ChangeProposal } from "@/lib/types";
 import { Badge } from "@/components/badge";
 import { ProposeChangeForm } from "@/components/propose-change-form";
 import { CountUp } from "@/components/count-up";
+import { GitHubActivity } from "@/components/github-activity";
 
 export default async function DashboardHome() {
   const [agentsRes, proposalsRes, tracesRes] = await Promise.all([
@@ -25,12 +26,19 @@ export default async function DashboardHome() {
 
   return (
     <div className="p-8">
-      <div className="animate-fade-in mb-8">
-        <h1 className="font-mono text-2xl text-foreground">Propose a Change</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted">
-          Pick a candidate config, run it against a matched historical cohort, and see
-          exactly which workflows and segments it helps or breaks before you ship it.
-        </p>
+      <div className="animate-fade-in relative mb-10 overflow-hidden rounded-xl border border-border bg-surface px-6 py-8 sm:px-10">
+        <div className="bg-grid bg-glow pointer-events-none absolute inset-0 opacity-[0.25]" />
+        <div className="relative z-10">
+          <p className="mb-2 flex items-center gap-1.5 font-mono text-[10px] font-medium tracking-wider text-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-success glow-pulse" />
+            LIVE · CHANGE INTELLIGENCE
+          </p>
+          <h1 className="font-mono text-2xl text-foreground sm:text-3xl">Propose a Change</h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted">
+            Pick a candidate config, run it against a matched historical cohort, and see
+            exactly which workflows and segments it helps or breaks before you ship it.
+          </p>
+        </div>
       </div>
 
       <div className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -39,6 +47,8 @@ export default async function DashboardHome() {
         <OverviewStat label="Changes analyzed" value={analyzedCount} delay={0.1} />
         <OverviewStat label="Shipped" value={shippedCount} delay={0.15} />
       </div>
+
+      <GitHubActivity />
 
       <Section title="PROPOSE" delay={0.2}>
         {agents.length === 0 ? (
@@ -115,11 +125,12 @@ export default async function DashboardHome() {
 function OverviewStat({ label, value, delay }: { label: string; value: number; delay: number }) {
   return (
     <div
-      className="feature-item rounded-lg border border-border bg-surface p-4 transition-all duration-200 ease-premium hover:-translate-y-0.5 hover:border-border-strong hover:shadow-sm"
+      className="feature-item group relative overflow-hidden rounded-lg border border-border bg-surface p-4 transition-all duration-200 ease-premium hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-sm"
       style={{ "--fade-delay": `${delay}s` } as React.CSSProperties}
     >
+      <div className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-accent transition-transform duration-300 ease-premium group-hover:scale-x-100" />
       <p className="text-[10px] font-medium tracking-wider text-muted">{label.toUpperCase()}</p>
-      <p className="mt-1 font-mono text-xl text-foreground">
+      <p className="mt-1 font-mono text-2xl text-foreground">
         <CountUp value={value} />
       </p>
     </div>

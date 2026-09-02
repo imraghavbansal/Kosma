@@ -41,7 +41,7 @@ def github_login(response: Response) -> RedirectResponse:
     authorize_url = (
         f"{GITHUB_AUTHORIZE_URL}?client_id={settings.github_client_id}"
         f"&redirect_uri={settings.github_oauth_redirect_uri}"
-        f"&scope=read:user%20user:email&state={state}"
+        f"&scope=read:user%20user:email%20public_repo&state={state}"
     )
     redirect = RedirectResponse(authorize_url)
     redirect.set_cookie(
@@ -99,6 +99,7 @@ def github_callback(
                 display_name=profile.get("name"),
                 email=email,
                 avatar_url=profile.get("avatar_url"),
+                github_access_token=access_token,
             )
             db.add(user)
         else:
@@ -106,6 +107,7 @@ def github_callback(
             user.display_name = profile.get("name")
             user.email = email
             user.avatar_url = profile.get("avatar_url")
+            user.github_access_token = access_token
         db.commit()
         db.refresh(user)
         user_id = str(user.id)
