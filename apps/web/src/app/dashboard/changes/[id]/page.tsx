@@ -51,6 +51,7 @@ export default async function ChangeDetailPage({ params }: { params: Promise<{ i
             evidenceBasis={report.evidence_basis}
             limitations={report.limitations}
             recommendedNextAction={report.recommended_next_action}
+            replayMethod={report.replay_method}
           />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

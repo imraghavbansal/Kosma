@@ -58,7 +58,15 @@ export default async function ProjectsPage() {
                 <span>{p.trace_count} traces</span>
                 <span>{p.change_proposal_count} changes</span>
               </div>
-              <p className="mt-2 text-[10px] text-muted">created {formatRelativeTime(p.created_at)}</p>
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-[10px] text-muted">created {formatRelativeTime(p.created_at)}</p>
+                {p.real_replay_configured && (
+                  <span className="flex items-center gap-1 text-[10px] text-accent">
+                    <span className="h-1 w-1 rounded-full bg-accent" />
+                    real replay
+                  </span>
+                )}
+              </div>
             </Link>
           ))}
         </div>

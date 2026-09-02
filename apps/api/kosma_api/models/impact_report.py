@@ -1,7 +1,7 @@
 import enum
 import uuid
 
-from sqlalchemy import Enum, Float, ForeignKey, Integer
+from sqlalchemy import Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -39,6 +39,12 @@ class ImpactReport(IDMixin, TimestampMixin, Base):
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
     overall_metrics: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     segment_metrics: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    # "real_llm": every replayed execution was a real model call (the
+    # project's configured llm_provider/llm_api_key), judged by a second
+    # real model call. "mock": change_engine/mock_behavior.py's deterministic
+    # demo model - honest by default until a project opts into real replay
+    # (see routers/projects.py PATCH). Never silently mixed within one report.
+    replay_method: Mapped[str] = mapped_column(String, nullable=False, default="mock")
 
     evidence: Mapped[list["ImpactEvidence"]] = relationship(
         back_populates="impact_report", cascade="all, delete-orphan"
@@ -50,19 +56,35 @@ class ImpactReport(IDMixin, TimestampMixin, Base):
     # the "unexplained magical recommendation" this product refuses to produce.
     @property
     def evidence_basis(self) -> str:
+        if self.replay_method == "real_llm":
+            return (
+                "Predicted from real counterfactual replay: the candidate config's "
+                "actual prompt was run through a real model call for each historical "
+                "input, and a second real model call judged the result - not live "
+                "traffic under the candidate config, and not a simulated demo model."
+            )
         return (
-            "Predicted from counterfactual replay: the candidate config was run "
-            "against comparable historical production traffic, not live traffic "
-            "under the candidate config."
+            "Predicted from a simulated demo replay model, not a real model call - "
+            "this project hasn't configured a real LLM provider/API key yet (Project "
+            "Settings). The candidate config's actual prompt was not run."
         )
 
     @property
     def limitations(self) -> list[str]:
-        notes = [
-            "Based on simulated replay against historical traffic, not observed "
-            "live behavior under the candidate config - see the Prediction "
-            "Scorecard once shipped for how this compares to what actually happened.",
-        ]
+        if self.replay_method == "real_llm":
+            notes = [
+                "Success is judged by a second LLM call, not ground truth - it's a "
+                "documented PREDICTED judgment, not an observed outcome.",
+                "Based on replay against historical traffic, not observed live "
+                "behavior under the candidate config - see the Prediction Scorecard "
+                "once shipped for how this compares to what actually happened.",
+            ]
+        else:
+            notes = [
+                "This report used the simulated demo replay model, not a real model "
+                "call - configure a real llm_provider/llm_api_key on this project to "
+                "get a real answer for this specific change.",
+            ]
         if self.recommendation == Recommendation.INSUFFICIENT_EVIDENCE:
             notes.append(
                 f"No segment had at least {MIN_SAMPLES_FOR_SIGNAL} replayed samples, the "

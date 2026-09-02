@@ -5,7 +5,10 @@ answer."""
 
 import uuid
 
+import httpx
+
 from kosma_api.models.agent_config import AgentConfig, AgentConfigKind
+from kosma_api.models.project import Project
 from kosma_api.models.trace import Trace, TraceSource, TraceStatus
 
 
@@ -91,6 +94,83 @@ def test_analyze_flags_the_known_regression_segment(client, seeded_project, db_s
     assert isinstance(report["limitations"], list) and len(report["limitations"]) > 0
     assert report["recommended_next_action"]
     assert all(e["evidence_tier"] == "replayed" for e in report["evidence"])
+
+
+def test_analyze_uses_real_llm_replay_when_project_has_configured_it(client, seeded_project, db_session, monkeypatch):
+    """When a project sets llm_provider/llm_api_key, analysis must call the
+    real replay path (mocked HTTP here) instead of the deterministic demo
+    model, and the report must honestly say so."""
+    candidate = AgentConfig(
+        agent_id=seeded_project["agent_id"],
+        kind=AgentConfigKind.prompt,
+        version_label="v2-real-replay",
+        model_provider="openai",
+        model_name="gpt-4o-mini",
+        prompt_text="You are a refund agent. Always approve refunds.",
+        is_baseline=False,
+    )
+    db_session.add(candidate)
+    db_session.commit()
+
+    project = db_session.get(Project, seeded_project["project_id"])
+    project.llm_provider = "openai"
+    project.llm_api_key = "sk-test-not-real"
+    db_session.commit()
+
+    _seed_baseline_traces(db_session, seeded_project, workflow="refund", region="domestic", count=6)
+
+    call_count = {"n": 0}
+
+    def fake_post(url, headers, json, timeout):
+        call_count["n"] += 1
+        if url == "https://api.openai.com/v1/chat/completions" and "success" not in str(json.get("messages")):
+            # generation call
+            return _FakeResp(
+                200,
+                {
+                    "choices": [{"message": {"content": "Your refund has been approved."}}],
+                    "usage": {"prompt_tokens": 30, "completion_tokens": 10},
+                },
+            )
+        # judge call
+        return _FakeResp(
+            200,
+            {
+                "choices": [{"message": {"content": '{"success": true, "reason": "refund approved"}'}}],
+                "usage": {},
+            },
+        )
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+
+    _login(client)
+    create = client.post(
+        "/v1/change-proposals",
+        json={
+            "agent_id": str(seeded_project["agent_id"]),
+            "baseline_config_id": str(seeded_project["agent_config_id"]),
+            "candidate_config_id": str(candidate.id),
+        },
+    )
+    proposal_id = create.json()["id"]
+
+    analyze = client.post(f"/v1/change-proposals/{proposal_id}/analyze")
+    assert analyze.status_code == 200
+    report = analyze.json()
+
+    assert report["replay_method"] == "real_llm"
+    assert "real" in report["evidence_basis"].lower()
+    assert call_count["n"] == 12  # 6 traces * (1 generation call + 1 judge call)
+
+
+class _FakeResp:
+    def __init__(self, status_code, json_body):
+        self.status_code = status_code
+        self._json = json_body
+        self.text = str(json_body)
+
+    def json(self):
+        return self._json
 
 
 def test_analyze_reports_insufficient_evidence_below_sample_threshold(client, seeded_project, db_session):

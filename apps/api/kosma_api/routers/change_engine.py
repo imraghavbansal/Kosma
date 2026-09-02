@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from kosma_api.auth import require_dashboard_session
 from kosma_api.change_engine.analysis import run_analysis
+from kosma_api.change_engine.llm_replay import LLMReplayError
 from kosma_api.change_engine.scorecard import compute_prediction_outcome
 from kosma_api.db.session import get_db
 from kosma_api.models.agent_config import AgentConfig
@@ -84,7 +85,16 @@ def analyze_change_proposal(proposal_id: uuid.UUID, db: Session = Depends(get_db
     proposal.status = ChangeProposalStatus.analyzing
     db.commit()
 
-    report = run_analysis(db, proposal)
+    try:
+        report = run_analysis(db, proposal)
+    except LLMReplayError as exc:
+        db.rollback()
+        proposal.status = ChangeProposalStatus.draft
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Real LLM replay failed, no report was fabricated: {exc}",
+        ) from exc
     return _load_with_evidence(db, report.id)
 
 

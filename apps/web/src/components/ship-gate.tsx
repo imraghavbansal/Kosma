@@ -18,16 +18,30 @@ export function ShipGate({
   evidenceBasis,
   limitations,
   recommendedNextAction,
+  replayMethod,
 }: {
   recommendation: Recommendation;
   confidence: number;
   evidenceBasis: string;
   limitations: string[];
   recommendedNextAction: string;
+  replayMethod: "real_llm" | "mock";
 }) {
   const style = GATE_STYLE[recommendation];
   return (
     <div className={`animate-fade-in rounded-lg border ${style.border} ${style.bg} p-5`}>
+      <div className="mb-3 flex items-center justify-between">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset ${
+            replayMethod === "real_llm"
+              ? "bg-accent/10 text-accent ring-accent/20"
+              : "bg-surface-2 text-muted ring-border-strong"
+          }`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${replayMethod === "real_llm" ? "bg-accent" : "bg-muted"}`} />
+          {replayMethod === "real_llm" ? "REAL LLM REPLAY" : "SIMULATED DEMO MODEL"}
+        </span>
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[10px] font-medium tracking-wider text-muted">RECOMMENDATION</p>

@@ -15,6 +15,8 @@ class ProjectSummaryOut(BaseModel):
     trace_count: int
     change_proposal_count: int
     created_at: datetime
+    real_replay_configured: bool
+    llm_provider: str | None
 
     model_config = {"from_attributes": True}
 
@@ -31,12 +33,16 @@ class ProjectDetailOut(BaseModel):
     created_at: datetime
     agents: list[AgentOut]
     change_proposals: list[ChangeProposalOut]
+    real_replay_configured: bool
+    llm_provider: str | None
 
     model_config = {"from_attributes": True}
 
 
 class ProjectPatchIn(BaseModel):
     github_repo: str | None = None
+    llm_provider: str | None = None
+    llm_api_key: str | None = None
 
 
 class ProjectCreateIn(BaseModel):

@@ -8,6 +8,7 @@ import { BackLink } from "@/components/back-link";
 import { LinkRepo } from "@/components/link-repo";
 import { RepoActivityPanel } from "@/components/repo-activity-panel";
 import { ConnectAgent } from "@/components/connect-agent";
+import { ConfigureReplay } from "@/components/configure-replay";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -39,6 +40,15 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       <div className="mb-10">
         <p className="mb-3 text-xs font-medium tracking-wider text-muted">CONNECT</p>
         <ConnectAgent projectId={project.id} agents={project.agents} />
+      </div>
+
+      <div className="mb-10">
+        <p className="mb-3 text-xs font-medium tracking-wider text-muted">ANALYSIS</p>
+        <ConfigureReplay
+          projectId={project.id}
+          configured={project.real_replay_configured}
+          provider={project.llm_provider}
+        />
       </div>
 
       <div className="mb-10">

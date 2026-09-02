@@ -162,6 +162,7 @@ export interface ImpactReport {
   evidence_basis: string;
   limitations: string[];
   recommended_next_action: string;
+  replay_method: "real_llm" | "mock";
 }
 
 export type RegressionTestStatus = "pending" | "passed" | "failed";
@@ -246,6 +247,8 @@ export interface ProjectSummary {
   trace_count: number;
   change_proposal_count: number;
   created_at: string;
+  real_replay_configured: boolean;
+  llm_provider: string | null;
 }
 
 export interface ProjectSummaryList {
@@ -260,6 +263,8 @@ export interface ProjectDetail {
   created_at: string;
   agents: Agent[];
   change_proposals: ChangeProposal[];
+  real_replay_configured: boolean;
+  llm_provider: string | null;
 }
 
 export interface GitHubRepo {

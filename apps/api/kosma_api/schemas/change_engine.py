@@ -54,6 +54,7 @@ class ImpactReportOut(BaseModel):
     evidence_basis: str
     limitations: list[str]
     recommended_next_action: str
+    replay_method: str
 
     model_config = {"from_attributes": True}
 

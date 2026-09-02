@@ -32,6 +32,26 @@ from kosma_api.schemas.projects import (
 router = APIRouter(prefix="/v1/projects", tags=["projects"], dependencies=[Depends(require_dashboard_session)])
 
 
+def _summary(project: Project, db: Session) -> ProjectSummaryOut:
+    agent_count = db.scalar(select(func.count()).select_from(Agent).where(Agent.project_id == project.id)) or 0
+    trace_count = db.scalar(select(func.count()).select_from(Trace).where(Trace.project_id == project.id)) or 0
+    cp_count = (
+        db.scalar(select(func.count()).select_from(ChangeProposal).where(ChangeProposal.project_id == project.id))
+        or 0
+    )
+    return ProjectSummaryOut(
+        id=project.id,
+        name=project.name,
+        github_repo=project.github_repo,
+        agent_count=agent_count,
+        trace_count=trace_count,
+        change_proposal_count=cp_count,
+        created_at=project.created_at,
+        real_replay_configured=bool(project.llm_provider and project.llm_api_key),
+        llm_provider=project.llm_provider,
+    )
+
+
 @router.post("", response_model=ProjectCreatedOut, status_code=status.HTTP_201_CREATED)
 def create_project(body: ProjectCreateIn, db: Session = Depends(get_db)) -> ProjectCreatedOut:
     """Real self-serve onboarding: creates an org/project/agent/baseline
@@ -85,26 +105,7 @@ def create_project(body: ProjectCreateIn, db: Session = Depends(get_db)) -> Proj
 @router.get("", response_model=ProjectSummaryListOut)
 def list_projects(db: Session = Depends(get_db)) -> ProjectSummaryListOut:
     projects = db.scalars(select(Project)).all()
-    items = []
-    for p in projects:
-        agent_count = db.scalar(select(func.count()).select_from(Agent).where(Agent.project_id == p.id)) or 0
-        trace_count = db.scalar(select(func.count()).select_from(Trace).where(Trace.project_id == p.id)) or 0
-        cp_count = (
-            db.scalar(select(func.count()).select_from(ChangeProposal).where(ChangeProposal.project_id == p.id))
-            or 0
-        )
-        items.append(
-            ProjectSummaryOut(
-                id=p.id,
-                name=p.name,
-                github_repo=p.github_repo,
-                agent_count=agent_count,
-                trace_count=trace_count,
-                change_proposal_count=cp_count,
-                created_at=p.created_at,
-            )
-        )
-    return ProjectSummaryListOut(items=items)
+    return ProjectSummaryListOut(items=[_summary(p, db) for p in projects])
 
 
 @router.get("/{project_id}", response_model=ProjectDetailOut)
@@ -126,6 +127,8 @@ def get_project(project_id: uuid.UUID, db: Session = Depends(get_db)) -> Project
         created_at=project.created_at,
         agents=project.agents,
         change_proposals=proposals,
+        real_replay_configured=bool(project.llm_provider and project.llm_api_key),
+        llm_provider=project.llm_provider,
     )
 
 
@@ -150,26 +153,30 @@ def patch_project(project_id: uuid.UUID, body: ProjectPatchIn, db: Session = Dep
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
-    repo = body.github_repo.strip() if body.github_repo else None
-    if repo is not None and "/" not in repo:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="github_repo must look like owner/name")
+    # Only touch fields the caller actually sent - e.g. linking a repo must
+    # never silently wipe an already-configured llm_api_key just because
+    # that request didn't mention it.
+    fields_sent = body.model_fields_set
 
-    project.github_repo = repo
+    if "github_repo" in fields_sent:
+        repo = body.github_repo.strip() if body.github_repo else None
+        if repo is not None and "/" not in repo:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="github_repo must look like owner/name"
+            )
+        project.github_repo = repo
+
+    if "llm_provider" in fields_sent:
+        provider = body.llm_provider.strip() if body.llm_provider else None
+        if provider is not None and provider not in ("openai", "anthropic"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="llm_provider must be 'openai' or 'anthropic'"
+            )
+        project.llm_provider = provider
+
+    if "llm_api_key" in fields_sent:
+        project.llm_api_key = body.llm_api_key.strip() if body.llm_api_key else None
+
     db.commit()
     db.refresh(project)
-
-    agent_count = db.scalar(select(func.count()).select_from(Agent).where(Agent.project_id == project.id)) or 0
-    trace_count = db.scalar(select(func.count()).select_from(Trace).where(Trace.project_id == project.id)) or 0
-    cp_count = (
-        db.scalar(select(func.count()).select_from(ChangeProposal).where(ChangeProposal.project_id == project.id))
-        or 0
-    )
-    return ProjectSummaryOut(
-        id=project.id,
-        name=project.name,
-        github_repo=project.github_repo,
-        agent_count=agent_count,
-        trace_count=trace_count,
-        change_proposal_count=cp_count,
-        created_at=project.created_at,
-    )
+    return _summary(project, db)

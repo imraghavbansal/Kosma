@@ -10,13 +10,15 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from kosma_api.change_engine import mock_behavior
+from kosma_api.change_engine import llm_replay, mock_behavior
 from kosma_api.change_engine.cohort import sample_cohort
 from kosma_api.models.agent_config import AgentConfig
 from kosma_api.models.change_proposal import ChangeProposal, ChangeProposalStatus
 from kosma_api.models.impact_evidence import ImpactEvidence
 from kosma_api.models.impact_report import MIN_SAMPLES_FOR_SIGNAL, ImpactReport, Recommendation
+from kosma_api.models.project import Project
 from kosma_api.models.trace import Trace, TraceSource, TraceStatus
+from kosma_api.pricing import estimate_cost
 
 # MIN_SAMPLES_FOR_SIGNAL (imported above) is a segment's minimum replayed
 # sample count before its delta counts toward the recommendation - too few
@@ -75,10 +77,41 @@ def _recommendation(segment_metrics: list[dict]) -> tuple[Recommendation, float]
     return recommendation, confidence
 
 
+def _real_replay_one(*, project: Project, candidate_config: AgentConfig, input_text: str) -> dict:
+    """One real counterfactual execution: a real model call using the
+    candidate's real prompt, then a real LLM-judge call scoring the result.
+    Raises LLMReplayError on failure - callers must not fall back to a
+    fabricated result when this was explicitly configured."""
+    output_text, input_tokens, output_tokens = llm_replay.generate_candidate_output(
+        provider=project.llm_provider,
+        api_key=project.llm_api_key,
+        model=candidate_config.model_name or "gpt-4o-mini",
+        prompt_text=candidate_config.prompt_text or "",
+        input_text=input_text,
+    )
+    success = llm_replay.judge_success(
+        provider=project.llm_provider,
+        api_key=project.llm_api_key,
+        input_text=input_text,
+        output_text=output_text,
+    )
+    return {
+        "success": success,
+        "output_tokens": output_tokens,
+        "input_tokens": input_tokens,
+        "output_text": output_text,
+    }
+
+
 def run_analysis(db: Session, change_proposal: ChangeProposal) -> ImpactReport:
     baseline_config = db.get(AgentConfig, change_proposal.baseline_config_id)
     candidate_config = db.get(AgentConfig, change_proposal.candidate_config_id)
     is_candidate = not candidate_config.is_baseline
+    project = db.get(Project, change_proposal.project_id)
+
+    use_real_replay = bool(
+        project and project.llm_provider and project.llm_api_key and candidate_config.prompt_text
+    )
 
     cohort = sample_cohort(
         db,
@@ -98,10 +131,19 @@ def run_analysis(db: Session, change_proposal: ChangeProposal) -> ImpactReport:
         workflow, region = segment.split(":", 1)
         replay_results = []
         for i, baseline_trace in enumerate(baseline_traces):
-            rng = random.Random(hash((str(change_proposal.id), baseline_trace.id, i)) % (2**32))
-            result = mock_behavior.simulate(
-                workflow=workflow, region=region, is_candidate=is_candidate, rng=rng
-            )
+            if use_real_replay:
+                result = _real_replay_one(
+                    project=project, candidate_config=candidate_config, input_text=baseline_trace.input_text
+                )
+                estimated_cost = estimate_cost(
+                    db, project.llm_provider, candidate_config.model_name, result["input_tokens"], result["output_tokens"]
+                )
+            else:
+                rng = random.Random(hash((str(change_proposal.id), baseline_trace.id, i)) % (2**32))
+                result = mock_behavior.simulate(
+                    workflow=workflow, region=region, is_candidate=is_candidate, rng=rng
+                )
+                estimated_cost = Decimal("0")
             replay_results.append(result)
 
             replay_trace = Trace(
@@ -119,9 +161,9 @@ def run_analysis(db: Session, change_proposal: ChangeProposal) -> ImpactReport:
                 input_tokens=baseline_trace.input_tokens,
                 output_tokens=result["output_tokens"],
                 total_tokens=baseline_trace.input_tokens + result["output_tokens"],
-                estimated_cost=Decimal("0"),
-                model_provider=baseline_trace.model_provider,
-                model_name=baseline_trace.model_name,
+                estimated_cost=estimated_cost,
+                model_provider=project.llm_provider if use_real_replay else baseline_trace.model_provider,
+                model_name=candidate_config.model_name if use_real_replay else baseline_trace.model_name,
                 source=TraceSource.replay,
             )
             db.add(replay_trace)
@@ -162,6 +204,7 @@ def run_analysis(db: Session, change_proposal: ChangeProposal) -> ImpactReport:
         confidence=confidence,
         overall_metrics=overall,
         segment_metrics=segment_metrics,
+        replay_method="real_llm" if use_real_replay else "mock",
     )
     db.add(report)
     db.flush()
