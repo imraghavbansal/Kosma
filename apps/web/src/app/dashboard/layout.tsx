@@ -83,7 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             KOSMA
           </span>
         </div>
-        <nav className="flex-1 space-y-6 overflow-y-auto">
+        <nav className="space-y-6 overflow-y-auto">
           {NAV.map((group) => (
             <div key={group.section}>
               <p className="mb-2 px-2 text-[10px] font-medium tracking-wider text-muted">
@@ -115,17 +115,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           ))}
         </nav>
-        <SidebarStatus />
-        <p className="mt-3 px-2 text-[10px] text-muted">
-          <a
-            href="https://github.com/imraghavbansal/Kosma"
-            target="_blank"
-            rel="noreferrer"
-            className="transition-colors duration-150 hover:text-foreground"
-          >
-            v0.1 · source
-          </a>
-        </p>
+        <div className="mt-auto border-t border-border pt-4">
+          <SidebarStatus />
+          <p className="mt-3 px-2 text-[10px] text-muted">
+            <a
+              href="https://github.com/imraghavbansal/Kosma"
+              target="_blank"
+              rel="noreferrer"
+              className="transition-colors duration-150 hover:text-foreground"
+            >
+              v0.1 · source
+            </a>
+          </p>
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
