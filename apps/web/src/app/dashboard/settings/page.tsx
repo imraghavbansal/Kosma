@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { serverApiFetch } from "@/lib/api-server";
 import { Badge } from "@/components/badge";
+import { LogoutButton } from "../logout-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function SettingsPage() {
   const meRes = await serverApiFetch("/v1/auth/me");
@@ -11,34 +13,42 @@ export default async function SettingsPage() {
     <div className="p-8">
       <h1 className="font-mono text-xl text-foreground">Settings</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted">
-        This deployment&apos;s configuration - read-only for now, matching V1&apos;s
-        single-tenant scope (see PRODUCT-SPEC.md).
+        Your session, this deployment&apos;s configuration, and where to read more.
       </p>
 
-      <div className="mt-6 space-y-6">
-        <Section title="SESSION">
-          <Row label="Signed in as">
-            {me.user ? (
-              <div className="flex items-center gap-2">
-                {me.user.avatar_url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={me.user.avatar_url}
-                    alt={me.user.github_username}
-                    className="h-5 w-5 rounded-full ring-1 ring-border"
-                  />
-                )}
-                <span className="text-foreground">
-                  {me.user.display_name ?? me.user.github_username}
-                </span>
-                <Badge variant="accent">GitHub</Badge>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-foreground">Shared secret</span>
-                <Badge variant="neutral">shared session</Badge>
-              </div>
-            )}
+      <div className="mt-6 max-w-2xl space-y-6">
+        <div className="animate-fade-in flex items-center gap-4 rounded-lg border border-border bg-surface p-5">
+          {me.user?.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={me.user.avatar_url}
+              alt={me.user.github_username}
+              className="h-14 w-14 rounded-full ring-1 ring-border"
+            />
+          ) : (
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent font-mono text-lg font-bold text-accent-foreground">
+              K
+            </div>
+          )}
+          <div className="flex-1">
+            <p className="text-base font-medium text-foreground">
+              {me.user ? (me.user.display_name ?? me.user.github_username) : "Project owner"}
+            </p>
+            <div className="mt-1 flex items-center gap-2">
+              {me.user ? (
+                <>
+                  <Badge variant="accent">GitHub · @{me.user.github_username}</Badge>
+                </>
+              ) : (
+                <Badge variant="neutral">Shared-secret session</Badge>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <Section title="APPEARANCE">
+          <Row label="Theme">
+            <ThemeToggle />
           </Row>
         </Section>
 
@@ -47,17 +57,17 @@ export default async function SettingsPage() {
             <Badge variant="warning">mock</Badge>
           </Row>
           <Row label="Auth model">
-            <span className="text-foreground">
-              Single-tenant, shared-secret + GitHub OAuth (both equally privileged)
+            <span className="text-right text-foreground">
+              Single-tenant, shared-secret + GitHub OAuth (equally privileged)
             </span>
           </Row>
           <Row label="Data">
-            <span className="text-foreground">Shared seeded demo corpus - clearly labeled throughout</span>
+            <span className="text-right text-foreground">Shared seeded demo corpus</span>
           </Row>
         </Section>
 
         <Section title="DOCUMENTATION">
-          <div className="space-y-1.5 text-sm">
+          <div className="space-y-1.5 p-5 text-sm">
             <DocLink href="https://github.com/imraghavbansal/Kosma/blob/main/PRODUCT-SPEC.md">
               PRODUCT-SPEC.md - product thesis, V1 scope decisions
             </DocLink>
@@ -69,6 +79,15 @@ export default async function SettingsPage() {
             </DocLink>
           </div>
         </Section>
+
+        <div className="rounded-lg border border-danger/20 bg-danger/5 p-5">
+          <p className="mb-1 text-sm font-medium text-foreground">Sign out</p>
+          <p className="mb-3 text-xs text-muted">
+            Ends this session. You can sign back in with GitHub or the shared secret
+            any time.
+          </p>
+          <LogoutButton />
+        </div>
       </div>
     </div>
   );

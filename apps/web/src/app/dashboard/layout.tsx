@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { LogoutButton } from "./logout-button";
 import { UserBadge } from "@/components/user-badge";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -33,17 +34,49 @@ const NAV = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Close the mobile drawer on route change so it doesn't stay open after navigating.
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-border px-4 py-6">
+      {/* Mobile top bar - hidden on lg+ where the sidebar is always visible */}
+      <div className="fixed inset-x-0 top-0 z-30 flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:hidden">
+        <span className="font-mono text-sm font-semibold tracking-tight text-foreground">KOSMA</span>
+        <button
+          onClick={() => setMobileNavOpen((v) => !v)}
+          aria-label="Toggle navigation"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-foreground transition-colors duration-150 hover:bg-surface-2"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            {mobileNavOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+          </svg>
+        </button>
+      </div>
+
+      {/* Backdrop for the mobile drawer */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 transition-opacity duration-200 lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 -translate-x-full flex-col border-r border-border bg-background px-4 py-6 transition-transform duration-300 ease-premium lg:static lg:w-60 lg:translate-x-0 ${
+          mobileNavOpen ? "translate-x-0" : ""
+        }`}
+      >
         <div className="mb-8 flex items-center justify-between px-2">
           <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
             KOSMA
           </span>
           <ThemeToggle />
         </div>
-        <nav className="flex-1 space-y-6">
+        <nav className="flex-1 space-y-6 overflow-y-auto">
           {NAV.map((group) => (
             <div key={group.section}>
               <p className="mb-2 px-2 text-[10px] font-medium tracking-wider text-muted">
@@ -78,7 +111,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <UserBadge />
         <LogoutButton />
       </aside>
-      <main className="flex-1 overflow-x-auto">
+
+      <main className="flex-1 overflow-x-auto pt-14 lg:pt-0">
         <div key={pathname} className="animate-fade-in">
           {children}
         </div>

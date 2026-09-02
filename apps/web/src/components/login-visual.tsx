@@ -1,10 +1,9 @@
-const DECORATIVE_BARS = [
-  { label: "account_change / domestic", pct: 78, positive: true, delay: 0 },
-  { label: "order_status / international", pct: 62, positive: true, delay: 0.1 },
-  { label: "refund / domestic", pct: 45, positive: true, delay: 0.2 },
-  { label: "refund / international", pct: 90, positive: false, delay: 0.3 },
-  { label: "order_status / domestic", pct: 30, positive: true, delay: 0.4 },
-];
+"use client";
+
+import { useEffect, useState } from "react";
+import { BlastRadiusDiff } from "@/components/blast-radius-diff";
+import { CountUp } from "@/components/count-up";
+import type { SegmentMetrics } from "@/lib/types";
 
 const FEATURES = [
   { title: "Blast Radius Diff", desc: "See which workflows and segments a change helps or breaks." },
@@ -12,38 +11,70 @@ const FEATURES = [
   { title: "Prediction Scorecard", desc: "Kosma grades its own forecast against what actually happened." },
 ];
 
+interface PublicStats {
+  total_traces: number;
+  total_analyzed_changes: number;
+  latest_impact_report: {
+    recommendation: string;
+    confidence: number;
+    segment_metrics: SegmentMetrics[];
+  } | null;
+}
+
 export function LoginVisual() {
+  const [stats, setStats] = useState<PublicStats | null>(null);
+
+  useEffect(() => {
+    fetch("/api/v1/public/stats")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setStats)
+      .catch(() => setStats(null));
+  }, []);
+
+  const report = stats?.latest_impact_report;
+
   return (
     <div className="relative hidden h-full flex-col justify-center overflow-hidden border-l border-border bg-surface px-12 lg:flex">
       <div className="bg-grid bg-glow pointer-events-none absolute inset-0 opacity-[0.4]" />
 
       <div className="relative z-10 max-w-md">
+        {stats && (
+          <div className="animate-fade-in mb-6 flex items-center gap-6 font-mono text-xs text-muted">
+            <span>
+              <span className="text-lg text-foreground">
+                <CountUp value={stats.total_traces} />
+              </span>{" "}
+              traces analyzed
+            </span>
+            <span>
+              <span className="text-lg text-foreground">
+                <CountUp value={stats.total_analyzed_changes} />
+              </span>{" "}
+              changes evaluated
+            </span>
+          </div>
+        )}
+
         <p className="mb-1 text-[10px] font-medium tracking-wider text-muted">
-          ILLUSTRATIVE - NOT LIVE DATA
+          {report ? "REAL BLAST RADIUS DIFF - LIVE DEMO DATA" : "BLAST RADIUS DIFF"}
         </p>
         <p className="mb-6 font-mono text-sm text-foreground/90">
-          Blast Radius Diff for a candidate prompt change
+          {report
+            ? "The most recent change proposal, analyzed against real replayed traffic"
+            : "Propose a change to see this fill in with real data"}
         </p>
 
-        <div className="space-y-3 rounded-lg border border-border bg-background/60 p-5 backdrop-blur-sm">
-          {DECORATIVE_BARS.map((bar, i) => (
-            <div key={bar.label} className="animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
-              <div className="mb-1 flex items-center justify-between text-[11px]">
-                <span className="font-mono text-foreground/70">{bar.label}</span>
-                <span className={bar.positive ? "text-success" : "text-danger"}>
-                  {bar.positive ? "+" : "-"}
-                  {bar.pct}%
-                </span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
-                <div
-                  className={`grow-bar h-full rounded-full ${bar.positive ? "bg-success/70" : "bg-danger/70"}`}
-                  style={{ width: `${bar.pct}%`, animationDelay: `${bar.delay + 0.3}s` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+        {report ? (
+          <div className="animate-fade-in rounded-lg border border-border bg-background/60 p-5 backdrop-blur-sm">
+            <BlastRadiusDiff segments={report.segment_metrics} />
+          </div>
+        ) : (
+          <div className="space-y-3 rounded-lg border border-dashed border-border p-5">
+            <div className="skeleton h-3 w-full rounded" />
+            <div className="skeleton h-3 w-4/5 rounded" />
+            <div className="skeleton h-3 w-3/5 rounded" />
+          </div>
+        )}
 
         <div className="mt-10 space-y-5">
           {FEATURES.map((f, i) => (
