@@ -35,6 +35,7 @@ class ImpactEvidenceOut(BaseModel):
     baseline_trace_id: uuid.UUID
     replay_trace_id: uuid.UUID
     note: str | None
+    evidence_tier: str
 
     model_config = {"from_attributes": True}
 
@@ -50,6 +51,9 @@ class ImpactReportOut(BaseModel):
     segment_metrics: list[dict]
     evidence: list[ImpactEvidenceOut] = []
     created_at: datetime
+    evidence_basis: str
+    limitations: list[str]
+    recommended_next_action: str
 
     model_config = {"from_attributes": True}
 

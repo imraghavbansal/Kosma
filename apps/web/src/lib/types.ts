@@ -124,7 +124,7 @@ export interface ChangeProposal {
   created_at: string;
 }
 
-export type Recommendation = "SHIP" | "MODIFY" | "BLOCK";
+export type Recommendation = "SHIP" | "MODIFY" | "BLOCK" | "INSUFFICIENT_EVIDENCE";
 
 export interface SegmentMetrics {
   segment: string;
@@ -145,6 +145,7 @@ export interface ImpactEvidence {
   baseline_trace_id: string;
   replay_trace_id: string;
   note: string | null;
+  evidence_tier: string;
 }
 
 export interface ImpactReport {
@@ -158,6 +159,9 @@ export interface ImpactReport {
   segment_metrics: SegmentMetrics[];
   evidence: ImpactEvidence[];
   created_at: string;
+  evidence_basis: string;
+  limitations: string[];
+  recommended_next_action: string;
 }
 
 export type RegressionTestStatus = "pending" | "passed" | "failed";

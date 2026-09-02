@@ -1,15 +1,19 @@
-# Kosma
+# Kosma — the AI change review system
 
-Know what a change will break before you ship it.
+Know what your AI change will break before you ship it.
 
 **Live**: https://kosma-ai.vercel.app
 
-Kosma is an AI change intelligence system. You propose a change to a prompt or a
-model, and instead of eyeballing a handful of test cases and hoping for the best,
-Kosma finds comparable historical executions of your agent, replays the candidate
-config against them, and hands you an evidence backed report of what actually
-changed, broken down by workflow and user segment, with a ship/modify/block
-recommendation attached.
+Traditional code review answers "what code changed?" Kosma answers "what
+production behavior will change because of it?" You propose a change to a
+prompt, model, or agent config, and instead of eyeballing a handful of test
+cases and hoping for the best, Kosma finds comparable historical executions of
+your agent, replays the candidate config against them, and hands you an
+evidence-backed verdict, broken down by workflow and user segment: SHIP,
+MODIFY, BLOCK, or — when the data genuinely doesn't support a call —
+INSUFFICIENT EVIDENCE. Every verdict states its evidence tier (replayed vs.
+predicted), its limitations, and a recommended next action; it never asserts
+confidence it hasn't earned.
 
 ## The problem this solves
 
@@ -104,22 +108,44 @@ Supabase - all free tier, no card required, no trial expiry - see
 [docs/architecture.md](docs/architecture.md) for why Docker/Railway got
 dropped along the way).
 
-**The full core loop (Phases 0-9) is built and verified against a real
-seeded corpus**, not toy data: propose a prompt/model change, Kosma finds the
-matched historical cohort, replays the candidate config against it, produces
-a segmented Blast Radius Diff and a Ship/Modify/Block recommendation,
-generates a regression suite from the worst regressions, and - once
-shipped - grades its own prediction against real live traffic under the new
-config. Every one of those steps has been run against the actual demo corpus
-and produced a correct answer (documented below), not just passed a unit
-test in isolation.
+**The full core loop is built and verified against a real database**, not
+toy data: propose a prompt/model change, Kosma finds the matched historical
+cohort, replays the candidate config against it, produces a segmented Blast
+Radius Diff and a SHIP / MODIFY / BLOCK / INSUFFICIENT-EVIDENCE verdict with
+its evidence basis and limitations stated, generates a regression suite from
+the worst regressions, and - once shipped - grades its own prediction
+against real live traffic under the new config. Every step has been run and
+verified against a real Postgres instance and, since self-serve onboarding
+shipped, against a real deployed backend end-to-end (create a project, get
+a real API key, send a real trace with it, confirm it lands) - not just
+passed a unit test in isolation.
 
-29 tests passing (25 backend + 4 SDK... see `apps/api/tests` and
-`packages/sdk/tests`), all against a real Postgres instance, no mocked DB.
+Real, working today (not mocked, not "coming soon"):
+
+- **Self-serve onboarding.** Create a project from the dashboard, get a real
+  API key on the spot, and a copy-paste Python SDK / curl snippet to send
+  your first real trace - verified end to end against production.
+- **GitHub sign-in with real repo activity.** OAuth is a second, equally
+  privileged login method (not per-user data isolation - see
+  [docs/architecture.md](docs/architecture.md)); once signed in, a project
+  can link to a real GitHub repo and show its actual recent commits and pull
+  requests, fetched live from the GitHub API.
+- **Evidence-first verdicts.** Every impact report states its evidence basis
+  (replayed against historical traffic, not live traffic under the
+  candidate), its limitations, and a recommended next action - and says
+  INSUFFICIENT EVIDENCE outright rather than guessing when no segment
+  cleared the minimum sample bar.
+- **API key regeneration**, GitHub Actions keep-alive for the free-tier
+  backend, dark-mode-only decorative polish that never blocks a real
+  interaction.
+
+45 backend tests passing (`apps/api/tests`) plus the SDK's own suite
+(`packages/sdk/tests`), all against a real Postgres instance, no mocked DB.
 Several real bugs were found and fixed along the way rather than papered
 over - connection pool exhaustion, a cascade-delete ordering bug, request
-idempotency under retry, IPv6-only DNS on the deploy host - see the commit
-history for each, and [docs/architecture.md](docs/architecture.md)'s
+idempotency under retry, IPv6-only DNS on the deploy host, a verdict that
+silently defaulted to SHIP when there wasn't enough data to say anything -
+see the commit history for each, and [docs/architecture.md](docs/architecture.md)'s
 revision notes for the ones that changed a design decision.
 
 | Phase | What | Status |
@@ -136,6 +162,7 @@ revision notes for the ones that changed a design decision.
 | 9 | Prediction Scorecard | Done |
 | 10 | Polish, Tests, Docs | Ongoing |
 | 11 | Deployment | Done |
+| 12 | Self-serve onboarding, real GitHub integration, evidence-first verdicts | Ongoing |
 
 Full phase breakdown and definition of done for each is in
 [docs/development-plan.md](docs/development-plan.md).
@@ -153,7 +180,7 @@ written and assumed correct.
 | Backend | Python + FastAPI + SQLAlchemy + Alembic | Native async, Pydantic validation fits the trace/span payload shape well, automatic OpenAPI docs come for free |
 | Database | Postgres + pgvector, hosted on Supabase | Cohort matching similarity search lives in the same store as the relational data, so a cohort query is one SQL statement joining an embedding distance against structured filters instead of federating two databases. Supabase ships pgvector pre-enabled, which sidesteps compiling it from source on native Windows Postgres (no official prebuilt binary) |
 | Background jobs | In-process asyncio tasks | Originally speced as Arq plus Redis. Changed after Docker Desktop proved unreliable for local dev (a known Docker Desktop / WSL2 networking fault). V1's actual job volume is a few thousand demo traces processed by one operator, so an extra broker buys nothing that a plain background task doesn't already give |
-| Auth | Single shared secret for the dashboard, hashed per-project API key for ingestion | Single-tenant portfolio deployment. Schema keeps `organization_id` and `project_id` so this isn't a rewrite if multi-tenancy is ever needed |
+| Auth | Shared dashboard secret or GitHub OAuth (both equally privileged), hashed per-project API key for ingestion | Single-tenant portfolio deployment. Schema keeps `organization_id` and `project_id` so this isn't a rewrite if multi-tenancy is ever needed |
 | AI calls | Mock provider only | Deterministic, zero cost, clearly labeled as demo data. A real provider abstraction exists in the code but isn't exercised in V1 |
 
 Full rationale for every decision, written as problem, options considered,
@@ -194,6 +221,12 @@ logging in with `KOSMA_DASHBOARD_SECRET`) for everything else.
 ```text
 POST /v1/traces                                   ingest a completed trace
 
+POST /v1/projects                                 create a project, get a real API key (shown once)
+GET  /v1/projects
+GET  /v1/projects/{id}
+PATCH /v1/projects/{id}                            link/unlink a github_repo ("owner/name")
+POST /v1/projects/{id}/regenerate-key               invalidate the old key, issue a new one
+
 GET  /v1/agents
 GET  /v1/agents/{id}
 GET  /v1/agents/{id}/configs
@@ -209,8 +242,8 @@ GET  /v1/evaluations?trace_id=
 POST /v1/change-proposals                         propose baseline vs candidate config
 GET  /v1/change-proposals?agent_id=&status=
 GET  /v1/change-proposals/{id}
-POST /v1/change-proposals/{id}/analyze             cohort match, replay, impact report
-GET  /v1/change-proposals/{id}/impact-report
+POST /v1/change-proposals/{id}/analyze             cohort match, replay, evidence-first verdict
+GET  /v1/change-proposals/{id}/impact-report        SHIP/MODIFY/BLOCK/INSUFFICIENT_EVIDENCE + evidence
 POST /v1/change-proposals/{id}/ship
 GET  /v1/change-proposals/{id}/prediction-outcome   predicted vs actual, once available
 
@@ -219,9 +252,17 @@ GET  /v1/regression-tests?project_id=&status=
 GET  /v1/regression-tests/{id}
 
 GET  /v1/analytics/overview
+GET  /v1/public/stats                              unauthenticated: real aggregate counts only
+
+GET  /v1/github/repos                              the signed-in user's real repos
+GET  /v1/github/activity                           real recent commits/PRs across those repos
+GET  /v1/github/repos/{owner}/{repo}/activity        real commits/PRs for one linked repo
 
 POST /v1/auth/login
 POST /v1/auth/logout
+GET  /v1/auth/me
+GET  /v1/auth/github/login                         GitHub OAuth
+GET  /v1/auth/github/callback
 ```
 
 Full request and response shapes are in [docs/api-design.md](docs/api-design.md).

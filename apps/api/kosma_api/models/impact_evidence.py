@@ -24,3 +24,11 @@ class ImpactEvidence(IDMixin, TimestampMixin, Base):
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     impact_report: Mapped["ImpactReport"] = relationship(back_populates="evidence")
+
+    @property
+    def evidence_tier(self) -> str:
+        # Always "replayed": every row here comes from counterfactual replay
+        # (change_engine/analysis.py), never a live observation or an
+        # unstated guess. See ImpactReport.evidence_basis for the report-level
+        # statement of what that means.
+        return "replayed"

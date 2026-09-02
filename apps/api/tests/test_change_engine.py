@@ -85,6 +85,39 @@ def test_analyze_flags_the_known_regression_segment(client, seeded_project, db_s
     other = segments["order_status:domestic"]
     assert other["success_delta"] > regressed["success_delta"]
 
+    # evidence-first fields: every verdict states its basis, limitations, and
+    # a next action - not just a bare recommendation string
+    assert report["evidence_basis"]
+    assert isinstance(report["limitations"], list) and len(report["limitations"]) > 0
+    assert report["recommended_next_action"]
+    assert all(e["evidence_tier"] == "replayed" for e in report["evidence"])
+
+
+def test_analyze_reports_insufficient_evidence_below_sample_threshold(client, seeded_project, db_session):
+    candidate_config_id = _make_candidate_config(db_session, seeded_project)
+    # 3 traces per segment - below MIN_SAMPLES_FOR_SIGNAL (5), so no segment
+    # should count as signal and the verdict must say so rather than guess.
+    _seed_baseline_traces(db_session, seeded_project, workflow="refund", region="international", count=3)
+
+    _login(client)
+    create = client.post(
+        "/v1/change-proposals",
+        json={
+            "agent_id": str(seeded_project["agent_id"]),
+            "baseline_config_id": str(seeded_project["agent_config_id"]),
+            "candidate_config_id": candidate_config_id,
+        },
+    )
+    proposal_id = create.json()["id"]
+
+    analyze = client.post(f"/v1/change-proposals/{proposal_id}/analyze")
+    assert analyze.status_code == 200
+    report = analyze.json()
+
+    assert report["recommendation"] == "INSUFFICIENT_EVIDENCE"
+    assert any("sample" in note.lower() for note in report["limitations"])
+    assert "more production traffic" in report["recommended_next_action"].lower()
+
 
 def test_analyze_is_idempotent(client, seeded_project, db_session):
     candidate_config_id = _make_candidate_config(db_session, seeded_project)

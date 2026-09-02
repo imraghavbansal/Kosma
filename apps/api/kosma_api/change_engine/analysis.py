@@ -15,15 +15,15 @@ from kosma_api.change_engine.cohort import sample_cohort
 from kosma_api.models.agent_config import AgentConfig
 from kosma_api.models.change_proposal import ChangeProposal, ChangeProposalStatus
 from kosma_api.models.impact_evidence import ImpactEvidence
-from kosma_api.models.impact_report import ImpactReport, Recommendation
+from kosma_api.models.impact_report import MIN_SAMPLES_FOR_SIGNAL, ImpactReport, Recommendation
 from kosma_api.models.trace import Trace, TraceSource, TraceStatus
 
-# A segment needs at least this many replayed samples before its delta counts
-# toward the recommendation - too few samples and a run of bad luck looks like
-# a regression. This is a simple, stated threshold, not a real statistical
-# test (see docs/architecture.md's "cohort statistics, not a trained model"
-# decision and PRODUCT-SPEC.md's "never fabricate certainty" principle).
-MIN_SAMPLES_FOR_SIGNAL = 5
+# MIN_SAMPLES_FOR_SIGNAL (imported above) is a segment's minimum replayed
+# sample count before its delta counts toward the recommendation - too few
+# samples and a run of bad luck looks like a regression. This is a simple,
+# stated threshold, not a real statistical test (see docs/architecture.md's
+# "cohort statistics, not a trained model" decision and PRODUCT-SPEC.md's
+# "never fabricate certainty" principle).
 BLOCK_THRESHOLD = -0.15
 MODIFY_THRESHOLD = -0.05
 
@@ -49,7 +49,15 @@ def _segment_metrics(baseline: list[Trace], replay_results: list[dict]) -> dict:
 
 def _recommendation(segment_metrics: list[dict]) -> tuple[Recommendation, float]:
     signals = [s for s in segment_metrics if s["sample_size"] >= MIN_SAMPLES_FOR_SIGNAL]
-    worst_delta = min((s["success_delta"] for s in signals), default=0.0)
+
+    # No segment cleared the sample-size bar: there's nothing to responsibly
+    # base SHIP/MODIFY/BLOCK on. Saying SHIP here (the old behavior) would be
+    # exactly the "fake intelligence when data is insufficient" this product
+    # explicitly refuses to do - so say that plainly instead of guessing.
+    if not signals:
+        return Recommendation.INSUFFICIENT_EVIDENCE, 0.3
+
+    worst_delta = min(s["success_delta"] for s in signals)
     total_samples = sum(s["sample_size"] for s in signals)
 
     if worst_delta <= BLOCK_THRESHOLD:
@@ -63,7 +71,7 @@ def _recommendation(segment_metrics: list[dict]) -> tuple[Recommendation, float]
     # replayed executions, more confidence in the delta being real rather than
     # noise. Capped well short of 1.0: this is cohort statistics on mock data,
     # never asserted as certainty.
-    confidence = round(min(0.92, 0.35 + 0.08 * math.sqrt(total_samples)), 2) if total_samples else 0.3
+    confidence = round(min(0.92, 0.35 + 0.08 * math.sqrt(total_samples)), 2)
     return recommendation, confidence
 
 

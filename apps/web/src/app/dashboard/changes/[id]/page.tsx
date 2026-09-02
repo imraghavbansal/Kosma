@@ -46,7 +46,13 @@ export default async function ChangeDetailPage({ params }: { params: Promise<{ i
         </div>
       ) : (
         <div className="space-y-8">
-          <ShipGate recommendation={report.recommendation} confidence={report.confidence} />
+          <ShipGate
+            recommendation={report.recommendation}
+            confidence={report.confidence}
+            evidenceBasis={report.evidence_basis}
+            limitations={report.limitations}
+            recommendedNextAction={report.recommended_next_action}
+          />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Metric label="Cohort" value={<CountUp value={report.cohort_size} />} />
@@ -81,6 +87,7 @@ export default async function ChangeDetailPage({ params }: { params: Promise<{ i
                 <thead>
                   <tr className="border-b border-border bg-surface-2 text-left text-xs text-muted">
                     <th className="px-4 py-2 font-medium">Segment</th>
+                    <th className="px-4 py-2 font-medium">Tier</th>
                     <th className="px-4 py-2 font-medium">Baseline trace</th>
                     <th className="px-4 py-2 font-medium">Replay trace</th>
                     <th className="px-4 py-2 font-medium">Note</th>
@@ -90,6 +97,9 @@ export default async function ChangeDetailPage({ params }: { params: Promise<{ i
                   {report.evidence.slice(0, 30).map((e) => (
                     <tr key={e.id} className="border-b border-border last:border-0 hover:bg-surface-2">
                       <td className="px-4 py-2 text-xs text-foreground/80">{e.segment}</td>
+                      <td className="px-4 py-2">
+                        <Badge variant="neutral">{e.evidence_tier}</Badge>
+                      </td>
                       <td className="px-4 py-2">
                         <Link
                           href={`/dashboard/traces/${e.baseline_trace_id}`}
