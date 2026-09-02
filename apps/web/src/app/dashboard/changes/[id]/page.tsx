@@ -8,6 +8,7 @@ import { BlastRadiusDiff } from "@/components/blast-radius-diff";
 import { ShipGate } from "@/components/ship-gate";
 import { AnalyzeButton } from "@/components/analyze-button";
 import { GenerateRegressionSuiteButton, ShipButton } from "@/components/change-actions";
+import { BackLink } from "@/components/back-link";
 
 export default async function ChangeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -27,6 +28,7 @@ export default async function ChangeDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="p-8">
+      <BackLink href="/dashboard" label="Propose a Change" />
       <div className="mb-1 flex items-center gap-3">
         <h1 className="font-mono text-lg text-foreground">CHANGE PROPOSAL</h1>
         <Badge variant={proposal.status === "shipped" ? "accent" : proposal.status === "analyzed" ? "success" : "neutral"}>

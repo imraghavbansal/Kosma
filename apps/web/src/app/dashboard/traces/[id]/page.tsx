@@ -4,6 +4,7 @@ import { formatCost, formatLatency, formatRelativeTime, formatTokens } from "@/l
 import type { TraceDetail } from "@/lib/types";
 import { Badge } from "@/components/badge";
 import { SpanTimeline } from "@/components/span-timeline";
+import { BackLink } from "@/components/back-link";
 
 export default async function TraceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,6 +23,7 @@ export default async function TraceDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="p-8">
+      <BackLink href="/dashboard/traces" label="Traces" />
       <div className="mb-1 flex items-center gap-3">
         <h1 className="font-mono text-lg text-foreground">TRACE #{trace.trace_ref.slice(0, 8)}</h1>
         <Badge
