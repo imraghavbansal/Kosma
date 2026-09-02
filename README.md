@@ -1,4 +1,4 @@
-# Kosma — the AI change review system
+# Kosma — the AI change intelligence system
 
 Know what your AI change will break before you ship it.
 
@@ -10,7 +10,7 @@ prompt, model, or agent config, and instead of eyeballing a handful of test
 cases and hoping for the best, Kosma finds comparable historical executions of
 your agent, replays the candidate config against them, and hands you an
 evidence-backed verdict, broken down by workflow and user segment: SHIP,
-MODIFY, BLOCK, or — when the data genuinely doesn't support a call —
+MODIFY, BLOCK, or, when the data genuinely doesn't support a call,
 INSUFFICIENT EVIDENCE. Every verdict states its evidence tier (replayed vs.
 predicted), its limitations, and a recommended next action; it never asserts
 confidence it hasn't earned.
