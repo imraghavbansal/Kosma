@@ -47,6 +47,7 @@ export function SidebarStatus() {
   return (
     <div className="relative mt-6 overflow-hidden rounded-lg border border-border bg-surface px-3 py-3">
       <div className="bg-grid bg-glow pointer-events-none absolute inset-0 opacity-[0.35]" />
+      <div className="starfield" aria-hidden="true" />
       <div className="relative z-10 space-y-2.5">
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5 text-[10px] font-medium tracking-wider text-muted">

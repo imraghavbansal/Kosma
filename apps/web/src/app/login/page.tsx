@@ -39,6 +39,7 @@ export default function LoginPage() {
     <main className="grid min-h-screen bg-background lg:h-screen lg:grid-cols-2 lg:overflow-hidden">
       <div className="relative flex h-full items-center justify-center overflow-y-auto px-4 py-16 lg:py-8">
         <div className="bg-grid pointer-events-none absolute inset-0 opacity-[0.15] lg:hidden" />
+        <div className="starfield" aria-hidden="true" />
         <div className="absolute right-6 top-6 z-20">
           <ThemeToggle />
         </div>

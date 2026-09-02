@@ -39,6 +39,7 @@ export function LoginVisual() {
   return (
     <div className="relative hidden h-full flex-col justify-center overflow-y-auto border-l border-border bg-surface px-12 py-16 lg:flex">
       <div className="bg-grid bg-glow pointer-events-none fixed inset-y-0 right-0 w-1/2 opacity-[0.4]" />
+      <div className="starfield" aria-hidden="true" />
 
       <div className="relative z-10 mx-auto w-full max-w-md">
         {stats && (

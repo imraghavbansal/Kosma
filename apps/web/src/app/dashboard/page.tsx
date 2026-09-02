@@ -28,6 +28,7 @@ export default async function DashboardHome() {
     <div className="p-8">
       <div className="animate-fade-in relative mb-10 overflow-hidden rounded-xl border border-border bg-surface px-6 py-8 sm:px-10">
         <div className="bg-grid bg-glow pointer-events-none absolute inset-0 opacity-[0.25]" />
+        <div className="starfield" aria-hidden="true" />
         <div className="relative z-10">
           <p className="mb-2 flex items-center gap-1.5 font-mono text-[10px] font-medium tracking-wider text-muted">
             <span className="h-1.5 w-1.5 rounded-full bg-success glow-pulse" />
