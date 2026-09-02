@@ -65,6 +65,51 @@ def list_repos(
     return {"items": repos}
 
 
+def _fetch_repo_activity(client: httpx.Client, full_name: str, per_page: int) -> tuple[list[dict], list[dict]]:
+    commits: list[dict] = []
+    pulls: list[dict] = []
+
+    try:
+        c_resp = client.get(f"{GITHUB_API}/repos/{full_name}/commits", params={"per_page": per_page})
+        if c_resp.status_code == 200:
+            for c in c_resp.json():
+                commits.append(
+                    {
+                        "repo": full_name,
+                        "sha": c["sha"][:7],
+                        "message": c["commit"]["message"].split("\n")[0],
+                        "author": (c.get("author") or {}).get("login") or c["commit"]["author"]["name"],
+                        "url": c["html_url"],
+                        "date": c["commit"]["author"]["date"],
+                    }
+                )
+    except httpx.HTTPError:
+        pass
+
+    try:
+        p_resp = client.get(
+            f"{GITHUB_API}/repos/{full_name}/pulls",
+            params={"state": "all", "per_page": per_page, "sort": "updated", "direction": "desc"},
+        )
+        if p_resp.status_code == 200:
+            for p in p_resp.json():
+                pulls.append(
+                    {
+                        "repo": full_name,
+                        "number": p["number"],
+                        "title": p["title"],
+                        "state": "merged" if p.get("merged_at") else p["state"],
+                        "author": p["user"]["login"],
+                        "url": p["html_url"],
+                        "updated_at": p["updated_at"],
+                    }
+                )
+    except httpx.HTTPError:
+        pass
+
+    return commits, pulls
+
+
 @router.get("/activity", dependencies=[Depends(require_dashboard_session)])
 def recent_activity(
     db: Session = Depends(get_db),
@@ -92,44 +137,9 @@ def recent_activity(
 
     with httpx.Client(headers=headers, timeout=10) as client:
         for repo in repos:
-            full_name = repo["full_name"]
-            try:
-                c_resp = client.get(f"{GITHUB_API}/repos/{full_name}/commits", params={"per_page": 3})
-                if c_resp.status_code == 200:
-                    for c in c_resp.json():
-                        commits.append(
-                            {
-                                "repo": full_name,
-                                "sha": c["sha"][:7],
-                                "message": c["commit"]["message"].split("\n")[0],
-                                "author": (c.get("author") or {}).get("login") or c["commit"]["author"]["name"],
-                                "url": c["html_url"],
-                                "date": c["commit"]["author"]["date"],
-                            }
-                        )
-            except httpx.HTTPError:
-                continue
-
-            try:
-                p_resp = client.get(
-                    f"{GITHUB_API}/repos/{full_name}/pulls",
-                    params={"state": "all", "per_page": 3, "sort": "updated", "direction": "desc"},
-                )
-                if p_resp.status_code == 200:
-                    for p in p_resp.json():
-                        pulls.append(
-                            {
-                                "repo": full_name,
-                                "number": p["number"],
-                                "title": p["title"],
-                                "state": "merged" if p.get("merged_at") else p["state"],
-                                "author": p["user"]["login"],
-                                "url": p["html_url"],
-                                "updated_at": p["updated_at"],
-                            }
-                        )
-            except httpx.HTTPError:
-                continue
+            c, p = _fetch_repo_activity(client, repo["full_name"], per_page=3)
+            commits.extend(c)
+            pulls.extend(p)
 
     commits.sort(key=lambda c: c["date"], reverse=True)
     pulls.sort(key=lambda p: p["updated_at"], reverse=True)
@@ -138,4 +148,31 @@ def recent_activity(
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "commits": commits[:8],
         "pull_requests": pulls[:6],
+    }
+
+
+@router.get("/repos/{owner}/{repo}/activity", dependencies=[Depends(require_dashboard_session)])
+def single_repo_activity(
+    owner: str,
+    repo: str,
+    db: Session = Depends(get_db),
+    user_id: str | None = Depends(get_current_user_id),
+) -> dict:
+    """Real commits and PRs for one specific repo - powers a project's detail
+    page once it's linked to a GitHub repo (see routers/projects.py)."""
+    user = _get_authenticated_user(db, user_id)
+    headers = {"Authorization": f"Bearer {user.github_access_token}", "Accept": "application/vnd.github+json"}
+    full_name = f"{owner}/{repo}"
+
+    with httpx.Client(headers=headers, timeout=10) as client:
+        commits, pulls = _fetch_repo_activity(client, full_name, per_page=10)
+
+    commits.sort(key=lambda c: c["date"], reverse=True)
+    pulls.sort(key=lambda p: p["updated_at"], reverse=True)
+
+    return {
+        "repo": full_name,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "commits": commits,
+        "pull_requests": pulls,
     }

@@ -16,6 +16,11 @@ class Project(IDMixin, TimestampMixin, Base):
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     api_key_hash: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    # "owner/name" of a real GitHub repo this project is linked to - lets the
+    # dashboard show a project's real commits/PRs alongside its Kosma trace
+    # and change-proposal history. Nullable: most seeded demo projects have
+    # no repo, and linking is an explicit user action (PATCH /v1/projects/{id}).
+    github_repo: Mapped[str | None] = mapped_column(String, nullable=True)
 
     organization: Mapped["Organization"] = relationship(back_populates="projects")
     agents: Mapped[list["Agent"]] = relationship(

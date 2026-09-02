@@ -100,7 +100,12 @@ export default async function DashboardHome() {
       )}
 
       <Section title="EXPLORE" delay={0.4}>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <QuickLink
+            href="/dashboard/projects"
+            title="Projects"
+            desc="Link a real GitHub repo and see its actual activity"
+          />
           <QuickLink
             href="/dashboard/traces"
             title="Trace Explorer"

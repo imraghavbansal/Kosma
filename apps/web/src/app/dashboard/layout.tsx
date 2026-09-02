@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { UserMenu } from "@/components/user-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SidebarStatus } from "@/components/sidebar-status";
 
 const NAV = [
   {
@@ -23,8 +24,9 @@ const NAV = [
     ],
   },
   {
-    section: "PROJECT",
+    section: "WORKSPACE",
     items: [
+      { label: "Projects", href: "/dashboard/projects" },
       { label: "Agents & Configs", href: "/dashboard/agents" },
       { label: "Settings", href: "/dashboard/settings" },
     ],
@@ -39,6 +41,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/regression-tests": "Regression Tests",
   "/dashboard/agents": "Agents & Configs",
   "/dashboard/settings": "Settings",
+  "/dashboard/projects": "Projects",
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -56,7 +59,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ? "Trace Detail"
       : pathname.startsWith("/dashboard/changes/")
         ? "Change Detail"
-        : "Kosma");
+        : pathname.startsWith("/dashboard/projects/")
+          ? "Project Detail"
+          : "Kosma");
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -110,7 +115,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           ))}
         </nav>
-        <p className="px-2 text-[10px] text-muted">
+        <SidebarStatus />
+        <p className="mt-3 px-2 text-[10px] text-muted">
           <a
             href="https://github.com/imraghavbansal/Kosma"
             target="_blank"

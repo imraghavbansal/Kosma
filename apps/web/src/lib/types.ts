@@ -190,3 +190,63 @@ export interface PredictionOutcome {
   evaluated_at: string | null;
   created_at: string;
 }
+
+export interface ProjectSummary {
+  id: string;
+  name: string;
+  github_repo: string | null;
+  agent_count: number;
+  trace_count: number;
+  change_proposal_count: number;
+  created_at: string;
+}
+
+export interface ProjectSummaryList {
+  items: ProjectSummary[];
+}
+
+export interface ProjectDetail {
+  id: string;
+  name: string;
+  github_repo: string | null;
+  trace_count: number;
+  created_at: string;
+  agents: Agent[];
+  change_proposals: ChangeProposal[];
+}
+
+export interface GitHubRepo {
+  name: string;
+  description: string | null;
+  url: string;
+  stars: number;
+  language: string | null;
+  pushed_at: string;
+  private: boolean;
+}
+
+export interface GitHubCommit {
+  repo: string;
+  sha: string;
+  message: string;
+  author: string;
+  url: string;
+  date: string;
+}
+
+export interface GitHubPullRequest {
+  repo: string;
+  number: number;
+  title: string;
+  state: string;
+  author: string;
+  url: string;
+  updated_at: string;
+}
+
+export interface GitHubRepoActivity {
+  repo: string;
+  fetched_at: string;
+  commits: GitHubCommit[];
+  pull_requests: GitHubPullRequest[];
+}

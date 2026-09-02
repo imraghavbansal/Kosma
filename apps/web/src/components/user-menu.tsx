@@ -93,15 +93,6 @@ export function UserMenu() {
           >
             Settings
           </Link>
-          <a
-            href="https://github.com/imraghavbansal/Kosma"
-            target="_blank"
-            rel="noreferrer"
-            role="menuitem"
-            className="block px-3 py-2 text-sm text-foreground/85 transition-colors duration-150 hover:bg-surface-2"
-          >
-            View source on GitHub
-          </a>
           <button
             onClick={handleLogout}
             role="menuitem"
