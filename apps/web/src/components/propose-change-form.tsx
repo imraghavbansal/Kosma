@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
@@ -49,11 +50,7 @@ export function ProposeChangeForm({ agents }: { agents: Agent[] }) {
   }
 
   if (!agent || !baseline) {
-    return (
-      <p className="text-sm text-muted">
-        No agent with a baseline config found. Run the demo agent&apos;s seed script first.
-      </p>
-    );
+    return <p className="text-sm text-muted">No agent with a baseline config found.</p>;
   }
 
   return (
@@ -67,19 +64,35 @@ export function ProposeChangeForm({ agents }: { agents: Agent[] }) {
         </div>
         <div>
           <label className="mb-1.5 block text-xs font-medium text-muted">CANDIDATE (proposed)</label>
-          <select
-            value={candidateId}
-            onChange={(e) => setCandidateId(e.target.value)}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm text-foreground outline-none transition-colors duration-150 focus:border-accent"
-          >
-            {candidates.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.version_label}
-              </option>
-            ))}
-          </select>
+          {candidates.length === 0 ? (
+            <div className="rounded-md border border-dashed border-border bg-surface-2 px-3 py-2 text-xs text-muted">
+              No candidate config yet
+            </div>
+          ) : (
+            <select
+              value={candidateId}
+              onChange={(e) => setCandidateId(e.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm text-foreground outline-none transition-colors duration-150 focus:border-accent"
+            >
+              {candidates.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.version_label}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
+
+      {candidates.length === 0 && (
+        <p className="text-xs text-muted">
+          You need a second config to propose a change between - add one on{" "}
+          <Link href="/dashboard/agents" className="text-accent hover:underline">
+            Agents &amp; Configs
+          </Link>{" "}
+          (e.g. a new prompt version), then come back here.
+        </p>
+      )}
 
       <div>
         <label className="mb-1.5 block text-xs font-medium text-muted">DESCRIPTION (optional)</label>

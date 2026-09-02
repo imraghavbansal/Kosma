@@ -31,3 +31,12 @@ class AgentOut(BaseModel):
 
 class AgentListOut(BaseModel):
     items: list[AgentOut]
+
+
+class AgentConfigIn(BaseModel):
+    kind: str
+    version_label: str
+    prompt_text: str | None = None
+    model_provider: str | None = None
+    model_name: str | None = None
+    is_baseline: bool = False

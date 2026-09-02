@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { serverApiFetch } from "@/lib/api-server";
 import { formatRelativeTime } from "@/lib/format";
 import type { Agent } from "@/lib/types";
+import Link from "next/link";
 import { Badge } from "@/components/badge";
+import { NewConfigForm } from "@/components/new-config-form";
 
 export default async function AgentsPage() {
   const res = await serverApiFetch("/v1/agents");
@@ -21,9 +23,11 @@ export default async function AgentsPage() {
       {agents.length === 0 ? (
         <div className="mt-6 rounded-lg border border-dashed border-border p-6">
           <p className="text-sm text-muted">
-            No agents yet. Run the demo agent&apos;s seed script (
-            <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-xs">apps/demo-agent</code>)
-            to create one.
+            No agents yet -{" "}
+            <Link href="/dashboard/projects" className="text-accent hover:underline">
+              create a project
+            </Link>{" "}
+            to get a default agent automatically.
           </p>
         </div>
       ) : (
@@ -58,6 +62,9 @@ export default async function AgentsPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+              <div className="border-t border-border">
+                <NewConfigForm agentId={agent.id} />
               </div>
             </div>
           ))}

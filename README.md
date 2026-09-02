@@ -1,8 +1,8 @@
-# Kosma — the AI change intelligence system
+# Kosma (the AI change intelligence system)
 
 Know what your AI change will break before you ship it.
 
-**Live**: https://kosma-ai.vercel.app
+**Live**: <https://kosma-ai.vercel.app>
 
 Traditional code review answers "what code changed?" Kosma answers "what
 production behavior will change because of it?" You propose a change to a
@@ -103,7 +103,7 @@ accepted, is in [PRODUCT-SPEC.md](PRODUCT-SPEC.md) and
 
 ## Status
 
-**Live**: https://kosma-ai.vercel.app (frontend on Vercel, API on Render, DB on
+**Live**: <https://kosma-ai.vercel.app> (frontend on Vercel, API on Render, DB on
 Supabase - all free tier, no card required, no trial expiry - see
 [docs/architecture.md](docs/architecture.md) for why Docker/Railway got
 dropped along the way).
@@ -135,6 +135,19 @@ Real, working today (not mocked, not "coming soon"):
   candidate), its limitations, and a recommended next action - and says
   INSUFFICIENT EVIDENCE outright rather than guessing when no segment
   cleared the minimum sample bar.
+- **Real counterfactual replay, per project.** By default a change proposal
+  is analyzed against a deterministic mock model, labeled as such. Once a
+  project sets its own `llm_provider` + API key (OpenAI or Anthropic), the
+  same analysis calls a real model with the candidate config's actual prompt
+  against real historical inputs, then a second real (cheap) model judges the
+  result, each labeled by evidence tier (replayed generation vs. predicted
+  judgment) rather than asserted as ground truth.
+- **GitHub PR bot.** A GitHub App webhook that, on a pull request against a
+  repo linked to a Kosma project, posts that project's most recent verdict as
+  a real PR comment. It doesn't try to guess which files in a diff constitute
+  an AI change and analyze the diff itself; it surfaces the verdict from the
+  most recent change proposal already analyzed, real already-computed
+  evidence rather than a new fabrication triggered by the diff.
 - **API key regeneration**, GitHub Actions keep-alive for the free-tier
   backend, dark-mode-only decorative polish that never blocks a real
   interaction.
@@ -149,7 +162,7 @@ see the commit history for each, and [docs/architecture.md](docs/architecture.md
 revision notes for the ones that changed a design decision.
 
 | Phase | What | Status |
-|---|---|---|
+| --- | --- | --- |
 | 0 | Planning: spec, architecture, schema, API design, roadmap | Done |
 | 1 | Foundation: monorepo, DB, auth, dashboard shell | Done |
 | 2 | SDK + Ingestion | Done |
@@ -175,13 +188,13 @@ written and assumed correct.
 ## Tech stack, and why
 
 | Layer | Choice | Why |
-|---|---|---|
+| --- | --- | --- |
 | Frontend | Next.js (App Router) + TypeScript + Tailwind | Server Components for the read-heavy pages, TanStack Query only where polling or caching an async job actually earns its keep |
 | Backend | Python + FastAPI + SQLAlchemy + Alembic | Native async, Pydantic validation fits the trace/span payload shape well, automatic OpenAPI docs come for free |
 | Database | Postgres + pgvector, hosted on Supabase | Cohort matching similarity search lives in the same store as the relational data, so a cohort query is one SQL statement joining an embedding distance against structured filters instead of federating two databases. Supabase ships pgvector pre-enabled, which sidesteps compiling it from source on native Windows Postgres (no official prebuilt binary) |
 | Background jobs | In-process asyncio tasks | Originally speced as Arq plus Redis. Changed after Docker Desktop proved unreliable for local dev (a known Docker Desktop / WSL2 networking fault). V1's actual job volume is a few thousand demo traces processed by one operator, so an extra broker buys nothing that a plain background task doesn't already give |
 | Auth | Shared dashboard secret or GitHub OAuth (both equally privileged), hashed per-project API key for ingestion | Single-tenant portfolio deployment. Schema keeps `organization_id` and `project_id` so this isn't a rewrite if multi-tenancy is ever needed |
-| AI calls | Mock provider only | Deterministic, zero cost, clearly labeled as demo data. A real provider abstraction exists in the code but isn't exercised in V1 |
+| AI calls | Mock provider by default; real OpenAI or Anthropic calls when a project configures its own `llm_provider` + API key | Mock keeps the seed demo deterministic and zero-cost. Once a project opts in, replay calls a real model for generation and a second real (cheap) model as judge, each result labeled by evidence tier - replayed generation vs. predicted judgment - never asserted as ground truth |
 
 Full rationale for every decision, written as problem, options considered,
 decision, reason, and the tradeoff I accepted, is in
@@ -189,7 +202,7 @@ decision, reason, and the tradeoff I accepted, is in
 
 ## Database schema
 
-17 tables. The short version of the relationships:
+18 tables. The short version of the relationships:
 
 ```text
 organizations -> projects -> agents -> agent_configs
@@ -224,39 +237,39 @@ POST /v1/traces                                   ingest a completed trace
 POST /v1/projects                                 create a project, get a real API key (shown once)
 GET  /v1/projects
 GET  /v1/projects/{id}
-PATCH /v1/projects/{id}                            link/unlink a github_repo ("owner/name")
+PATCH /v1/projects/{id}                            link/unlink a github_repo ("owner/name"), set llm_provider/llm_api_key
 POST /v1/projects/{id}/regenerate-key               invalidate the old key, issue a new one
 
-GET  /v1/agents
-GET  /v1/agents/{id}
-GET  /v1/agents/{id}/configs
+GET  /v1/agents                                   every agent for the project, each with its configs
 POST /v1/agents/{id}/configs                      register a prompt or model version
 
-GET  /v1/traces?workflow_tag=&agent_id=&status=&source=&q=
+GET  /v1/traces?workflow_tag=&limit=&offset=
 GET  /v1/traces/{id}                              full span/tool/retrieval tree
 
-GET  /v1/failure-clusters
-GET  /v1/failure-clusters/{id}
-GET  /v1/evaluations?trace_id=
+GET  /v1/analytics/failure-clusters               real failed traces grouped by workflow+region
 
 POST /v1/change-proposals                         propose baseline vs candidate config
-GET  /v1/change-proposals?agent_id=&status=
+GET  /v1/change-proposals
 GET  /v1/change-proposals/{id}
-POST /v1/change-proposals/{id}/analyze             cohort match, replay, evidence-first verdict
+POST /v1/change-proposals/{id}/analyze             cohort match, replay (mock or real, per project), evidence-first verdict
 GET  /v1/change-proposals/{id}/impact-report        SHIP/MODIFY/BLOCK/INSUFFICIENT_EVIDENCE + evidence
 POST /v1/change-proposals/{id}/ship
 GET  /v1/change-proposals/{id}/prediction-outcome   predicted vs actual, once available
 
 POST /v1/impact-reports/{id}/regression-tests       generate from worst regressions
-GET  /v1/regression-tests?project_id=&status=
+GET  /v1/regression-tests
 GET  /v1/regression-tests/{id}
 
-GET  /v1/analytics/overview
+GET  /v1/scorecard/calibration                     Kosma's own prediction accuracy, tracked over time
+GET  /v1/command-center                            dashboard-home triage: what needs attention right now
+GET  /v1/behavioral-memory?q=                       search every change ever proposed, by description/agent/segment
+
 GET  /v1/public/stats                              unauthenticated: real aggregate counts only
 
 GET  /v1/github/repos                              the signed-in user's real repos
 GET  /v1/github/activity                           real recent commits/PRs across those repos
 GET  /v1/github/repos/{owner}/{repo}/activity        real commits/PRs for one linked repo
+POST /v1/github/webhook                             GitHub App PR-bot: posts the latest verdict as a PR comment
 
 POST /v1/auth/login
 POST /v1/auth/logout
@@ -298,9 +311,9 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 and sign in with `KOSMA_DASHBOARD_SECRET` from
+Open <http://localhost:3000> and sign in with `KOSMA_DASHBOARD_SECRET` from
 your `.env`. The backend's auto-generated API docs are at
-http://localhost:8000/docs.
+<http://localhost:8000/docs>.
 
 ### Optional: Docker
 
@@ -323,8 +336,9 @@ apps/
   api/          FastAPI backend: ingestion, change engine, query API
     kosma_api/
       ingestion/       POST /v1/traces, auth, payload validation
-      change_engine/   cohort matching, replay, impact reports
-      analytics/       overview, failure clusters, evaluations
+      change_engine/   cohort matching, mock and real LLM replay, impact reports
+      analytics/       failure clusters
+      routers/         all API endpoints, including behavioral memory, command center, scorecard, GitHub App webhook
       models/          SQLAlchemy models
       schemas/         Pydantic schemas
       background/      in-process background tasks
