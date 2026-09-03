@@ -101,6 +101,44 @@ Full reasoning for every one of these calls, including the tradeoffs I
 accepted, is in [PRODUCT-SPEC.md](PRODUCT-SPEC.md) and
 [docs/architecture.md](docs/architecture.md).
 
+## Limitations
+
+"What Kosma is not" above covers deliberate product-scope decisions. These are
+the operational limitations of what's actually deployed today:
+
+- **No per-user data isolation.** GitHub OAuth is a second login method, not a
+  tenancy boundary - every signed-in session sees the same organization's
+  projects and traces. Multi-tenant auth is explicitly out of scope for V1
+  (see "What Kosma is not").
+- **Cohort matching is structured-filter, not embedding similarity, in V1.**
+  `sample_cohort` matches on agent/config/workflow/region because the seeded
+  demo corpus's inputs are template-generated per workflow - `input_embedding`
+  is populated on ingestion and ready for a real semantic-similarity query once
+  trace inputs are genuinely free-text (real LLM providers, not the mock
+  demo agent).
+- **The sample-size bar behind INSUFFICIENT_EVIDENCE is a stated heuristic,
+  not a statistical significance test.** `MIN_SAMPLES_FOR_SIGNAL` and the
+  BLOCK/MODIFY thresholds in `change_engine/analysis.py` are simple, documented
+  cutoffs chosen for the demo's data volumes, not a confidence interval or
+  p-value computed from the data itself.
+- **Mock replay is the default evidence tier.** A change proposal is analyzed
+  against a deterministic mock model unless a project explicitly sets
+  `llm_provider`/`llm_api_key`; every report and evidence row states which
+  tier produced it, but it's on the reader to check `replay_method` rather
+  than assume real-model behavior.
+- **The GitHub App PR bot surfaces the latest already-analyzed verdict.** It
+  does not read the PR diff, decide whether it constitutes an AI change, or
+  trigger a new analysis on push - a PR comment reflects whatever change
+  proposal was most recently analyzed for the linked project.
+- **Free-tier hosting constraints are real.** Render's free web service spins
+  down on idle (mitigated with a GitHub Actions keep-alive ping, which means
+  first-request latency can still spike after a gap) and Supabase's free tier
+  caps connection count and storage - `db/session.py`'s conservative
+  connection pool exists because of this, not by preference.
+- **SDK ingestion is synchronous and SDK-only, no OTLP.** A trace is POSTed in
+  one shot after the wrapped call completes; there's no partial/streaming
+  ingestion and no OTLP collector (see "What Kosma is not").
+
 ## Status
 
 **Live**: <https://kosma-ai.vercel.app> (frontend on Vercel, API on Render, DB on
@@ -173,9 +211,9 @@ revision notes for the ones that changed a design decision.
 | 7 | Home Dashboard (Propose a Change) | Done |
 | 8 | Regression Suite Generation | Done |
 | 9 | Prediction Scorecard | Done |
-| 10 | Polish, Tests, Docs | Ongoing |
+| 10 | Polish, Tests, Docs | Done |
 | 11 | Deployment | Done |
-| 12 | Self-serve onboarding, real GitHub integration, evidence-first verdicts | Ongoing |
+| 12 | Self-serve onboarding, real GitHub integration, evidence-first verdicts | Done |
 | 13 | Real LLM replay, behavioral memory, command center, GitHub App PR bot | Done |
 
 Full phase breakdown and definition of done for each is in
@@ -324,10 +362,28 @@ point at Supabase, it does not run Postgres locally.
 
 ## Running the backend tests
 
+The suite needs a real Postgres+pgvector database - it exercises real queries,
+not a mock DB. By default it uses whatever `DATABASE_URL` your `.env` already
+has:
+
 ```bash
 cd apps/api
 python -m pytest tests/ -v
 ```
+
+Test runs create and cascade-delete real rows in that database (via the
+`seeded_project` fixture's teardown) - fine against a dev project, not
+something to point at a production database.
+
+If you'd rather isolate tests from your dev data, set `TEST_DATABASE_URL` to
+a different Postgres+pgvector connection string (it overrides `DATABASE_URL`
+for the test process only, see `tests/conftest.py`) and run `alembic upgrade
+head` against it once first. Supabase's free tier caps you at 2 projects, so
+a dedicated second Supabase project isn't available to everyone - local
+Docker Postgres was tried and dropped for V1 for a different reason (see the
+revision note at the top of [docs/architecture.md](docs/architecture.md)),
+so there's no first-class local alternative documented here either. Running
+against your existing dev project is the supported default.
 
 ## Repository layout
 

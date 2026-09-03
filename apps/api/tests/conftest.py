@@ -3,6 +3,14 @@ import os
 # DATABASE_URL intentionally not defaulted here - it comes from .env (Supabase
 # connection string), same as the running app. Set it explicitly if running tests
 # without a .env file present.
+#
+# TEST_DATABASE_URL, if set, overrides DATABASE_URL for this process only,
+# before any app module reads settings - point it at a dedicated test Postgres
+# project (see README's "Running the backend tests") so the suite's
+# create-then-cascade-delete fixtures never touch real production data.
+if os.environ.get("TEST_DATABASE_URL"):
+    os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
+
 os.environ.setdefault("KOSMA_DASHBOARD_SECRET", "test-secret-123")
 os.environ.setdefault("KOSMA_SESSION_SECRET_KEY", "test-session-signing-key")
 
